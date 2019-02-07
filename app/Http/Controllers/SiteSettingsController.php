@@ -8,7 +8,7 @@ class SiteSettingsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,11 +21,11 @@ class SiteSettingsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
 
-		if(!$this->panelInit->hasThePerm('generalSettings')){
+		if(!$this->panelInit->can( array("adminTasks.globalSettings","adminTasks.activatedModules","adminTasks.paymentsSettings","adminTasks.mailSmsSettings","adminTasks.vacationSettings","adminTasks.mobileSettings","adminTasks.frontendCMS","adminTasks.bioItegration","adminTasks.lookFeel") )){
 			exit;
 		}
+		
 	}
 
 	public function listAll($title)
@@ -226,6 +226,8 @@ class SiteSettingsController extends Controller {
 	public function test_mail_function(){
 		ob_start( );
 
+		global $debug_smtp;
+		$debug_smtp = true;
 		$MailSmsHandler = new \MailSmsHandler();
 		$mail_response = $MailSmsHandler->mail(\Input::get('sendTestTo'),$this->panelInit->settingsArray['siteTitle']." | Test Mail Function",\Input::get('sendMessage'));
 

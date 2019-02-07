@@ -9,7 +9,7 @@ class dbexportsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,9 +22,8 @@ class dbexportsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
 
-		if(!$this->panelInit->hasThePerm('generalSettings')){
+		if(!$this->panelInit->can( "dbExport.dbExport" )){
 			exit;
 		}
 	}
@@ -41,7 +40,7 @@ class dbexportsController extends Controller {
 			$db_username = config("database.connections.{$connection}.username");
 			$db_password = config("database.connections.{$connection}.password");
 
-		    $dump = new IMysqldump\Mysqldump('mysql:host='.$db_host.':'.$db_port.';dbname='.$db_name, $db_username, $db_password);
+		    $dump = new IMysqldump\Mysqldump('mysql:host='.$db_host.';dbname='.$db_name, $db_username, $db_password);
 
 		    header('Content-Type: application/octet-stream');
 			header("Content-Transfer-Encoding: Binary"); 

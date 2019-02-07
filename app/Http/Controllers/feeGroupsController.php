@@ -8,7 +8,7 @@ class feeGroupsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,20 +21,23 @@ class feeGroupsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
-
-		if(!$this->panelInit->hasThePerm('accounting')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+		if(!$this->panelInit->can( array("FeeGroups.list","FeeGroups.addFeeGroup","FeeGroups.editFeeGroup","FeeGroups.delFeeGroup") )){
+			exit;
+		}
+
 		return \fee_group::get();
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "FeeGroups.delFeeGroup" )){
+			exit;
+		}
+
 		if ( $postDelete = \fee_group::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -45,6 +48,11 @@ class feeGroupsController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "FeeGroups.addFeeGroup" )){
+			exit;
+		}
+
 		$feeGroup = new \fee_group();
 		$feeGroup->group_title = \Input::get('group_title');
 		if(\Input::has('group_description')){
@@ -57,10 +65,20 @@ class feeGroupsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "FeeGroups.editFeeGroup" )){
+			exit;
+		}
+
 		return \fee_group::where('id',$id)->first();
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "FeeGroups.editFeeGroup" )){
+			exit;
+		}
+		
 		$feeGroup = \fee_group::find($id);
 		$feeGroup->group_title = \Input::get('group_title');
 		$feeGroup->group_description = \Input::get('group_description');

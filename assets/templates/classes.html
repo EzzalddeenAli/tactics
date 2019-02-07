@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addClass}}</button>
+                <button ng-show="$root.can('classes.addClass')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addClass}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
@@ -28,7 +28,7 @@
                                 <th>{{phrase.classTeacher}}</th>
                                 <th>{{phrase.associatedSubjects}}</th>
                                 <th>{{phrase.classDorm}}</th>
-                                <th>{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('classes.editClass') || $root.can('classes.delClass')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="class in classes | filter:searchText">
                                 <td>{{class.className}}</td>
@@ -40,8 +40,8 @@
                                 </td>
                                 <td>{{class.dormitoryName}}</td>
                                 <td>
-                                    <button ng-click="edit(class.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(class,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                    <button ng-show="$root.can('classes.editClass')" ng-click="edit(class.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('classes.delClass')" ng-click="remove(class,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="classes.length == '0'"><td class="noTableData" colspan="5">{{phrase.NoClasses}}</td></tr>

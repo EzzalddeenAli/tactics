@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-if="userRole == 'admin'" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addEvent}}</button>
+                <button ng-show="$root.can('events.addEvent')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addEvent}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
@@ -29,22 +29,22 @@
                                 <th>{{phrase.eventPlace}}</th>
                                 <th>{{phrase.for}}</th>
                                 <th>{{phrase.Date}}</th>
-                                <th>{{phrase.visibleCMS}}</th>
-                                <th style="width:170px;" ng-if="userRole == 'admin'">{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('events.editEvent') || $root.can('events.delEvent')">{{phrase.visibleCMS}}</th>
+                                <th style="width:170px;" ng-show="$root.can('events.editEvent') || $root.can('events.delEvent')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="event in events | filter:searchText">
-                                <td><a href="#events/{{event.id}}">{{event.eventTitle}}</a></td>
+                                <td><a href="portal#events/{{event.id}}">{{event.eventTitle}}</a></td>
                                 <td><div ng-bind-html="event.eventDescription"></div></td>
                                 <td>{{event.enentPlace}}</td>
                                 <td>{{event.eventFor}}</td>
                                 <td>{{event.eventDate}}</td>
-                                 <td>
+                                <td ng-show="$root.can('events.editEvent') || $root.can('events.delEvent')">
                                     <i ng-class="{'color_red':event.fe_active != 1,'color_green':event.fe_active == 1}" class="fa fa-lightbulb-o"></i>
                                 </td>
-                                <td ng-if="userRole == 'admin'">
-                                    <button ng-if="userRole == 'admin'" ng-click="fe_status(event.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleCMS}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
-                                    <button ng-if="userRole == 'admin'" ng-click="edit(event.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-if="userRole == 'admin'" ng-click="remove(event,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('events.editEvent') || $root.can('events.delEvent')">
+                                    <button ng-show="$root.can('events.editEvent')" ng-click="fe_status(event.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleCMS}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
+                                    <button ng-show="$root.can('events.editEvent')" ng-click="edit(event.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('events.delEvent')" ng-click="remove(event,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!events.length"><td class="noTableData" colspan="6">{{phrase.noEvents}}</td></tr>

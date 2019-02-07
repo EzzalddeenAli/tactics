@@ -1,0 +1,5 @@
+[30-Jan-2019 03:22:33 UTC] PHP Notice:  Undefined index: HTTP_ACCEPT_LANGUAGE in /home/ddr3nsbpy23v/public_html/tactics.com.mx/LMS/main/install/install.lib.php on line 279
+[30-Jan-2019 03:22:33 UTC] PHP Notice:  Undefined variable: dbPortForm in /home/ddr3nsbpy23v/public_html/tactics.com.mx/LMS/main/install/index.php on line 441
+[30-Jan-2019 03:22:33 UTC] PHP Notice:  Undefined variable: ShowEmailNotCheckedToStudent in /home/ddr3nsbpy23v/public_html/tactics.com.mx/LMS/main/install/index.php on line 459
+[30-Jan-2019 03:22:33 UTC] PHP Notice:  Undefined variable: dbPortForm in /home/ddr3nsbpy23v/public_html/tactics.com.mx/LMS/main/install/index.php on line 752
+[30-Jan-2019 03:22:33 UTC] PHP Notice:  Undefined variable: dbPortForm in /home/ddr3nsbpy23v/public_html/tactics.com.mx/LMS/main/install/index.php on line 765

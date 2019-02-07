@@ -8,7 +8,7 @@ class EventsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,18 +22,20 @@ class EventsController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('events')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("events.list","events.View","events.addEvent","events.editEvent","events.delEvent") )){
+			exit;
+		}
+
 		$toReturn = array();
 		if($this->data['users']->role == "admin" ){
-			$toReturn['events'] = \events::get()->toArray();
+			$toReturn['events'] = \events::orderby('eventDate','DESC')->get()->toArray();
 		}else{
-			$toReturn['events'] = \events::where('eventFor',$this->data['users']->role)->orWhere('eventFor','all')->get()->toArray();
+			$toReturn['events'] = \events::where('eventFor',$this->data['users']->role)->orWhere('eventFor','all')->orderby('eventDate','DESC')->get()->toArray();
 		}
 
 		foreach ($toReturn['events'] as $key => $item) {
@@ -41,12 +43,15 @@ class EventsController extends Controller {
 			$toReturn['events'][$key]['eventDate'] = $this->panelInit->unix_to_date($toReturn['events'][$key]['eventDate']);
 		}
 
-		$toReturn['userRole'] = $this->data['users']->role;
 		return $toReturn;
 	}
 
 	public function delete($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "events.delEvent" )){
+			exit;
+		}
+
 		if ( $postDelete = \events::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -57,7 +62,11 @@ class EventsController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "events.addEvent" )){
+			exit;
+		}
+
 		$events = new \events();
 		$events->eventTitle = \Input::get('eventTitle');
 		$events->eventDescription = htmlspecialchars(\Input::get('eventDescription'),ENT_QUOTES);
@@ -68,6 +77,11 @@ class EventsController extends Controller {
 
 		if (\Input::hasFile('eventImage')) {
 			$fileInstance = \Input::file('eventImage');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addEvent'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/events/',$newFileName);
 
@@ -101,6 +115,11 @@ class EventsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( array("events.View","events.editEvent") )){
+			exit;
+		}
+
 		$data = \events::where('id',$id)->first()->toArray();
 		$data['eventDescription'] = htmlspecialchars_decode($data['eventDescription'],ENT_QUOTES);
 		$data['eventDate'] = $this->panelInit->unix_to_date($data['eventDate']);
@@ -108,7 +127,11 @@ class EventsController extends Controller {
 	}
 
 	function edit($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "events.editEvent" )){
+			exit;
+		}
+
 		$events = \events::find($id);
 		$events->eventTitle = \Input::get('eventTitle');
 		$events->eventDescription = htmlspecialchars(\Input::get('eventDescription'),ENT_QUOTES);
@@ -119,6 +142,11 @@ class EventsController extends Controller {
 
 		if (\Input::hasFile('eventImage')) {
 			$fileInstance = \Input::file('eventImage');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editEvent'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
 			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/events/',$newFileName);
 
@@ -134,7 +162,11 @@ class EventsController extends Controller {
 	}
 
 	function fe_active($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "events.editEvent" )){
+			exit;
+		}
+
 		$events = \events::find($id);
 		
 		if($events->fe_active == 1){

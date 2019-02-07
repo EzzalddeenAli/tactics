@@ -8,7 +8,7 @@ class promotionController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,14 +21,14 @@ class promotionController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
 
-		if(!$this->panelInit->hasThePerm('Promotion')){
+		if(!$this->panelInit->can( array("Promotion.promoteStudents") )){
 			exit;
 		}
 	}
 
 	public function listStudents(){
+
 		$toReturn = array('students'=>array(),"classes"=>array());
 
 		if(\Input::get('selectType') == "selStudents"){

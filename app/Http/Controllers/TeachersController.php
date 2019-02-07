@@ -8,7 +8,7 @@ class TeachersController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,18 +21,24 @@ class TeachersController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
 
-		if(!$this->panelInit->hasThePerm('teachers')){
-			exit;
-		}
 	}
 
 	function waitingApproval(){
+
+		if(!$this->panelInit->can( "teachers.Approve" )){
+			exit;
+		}
+		
 		return \User::where('role','teacher')->where('activated','0')->orderBy('id','DESC')->get();
 	}
 
 	function approveOne($id){
+
+		if(!$this->panelInit->can( "teachers.Approve" )){
+			exit;
+		}
+
 		$user = \User::find($id);
 		$user->activated = 1;
 		$user->save();
@@ -42,6 +48,11 @@ class TeachersController extends Controller {
 
 	public function listAll($page = 1)
 	{
+
+		if(!$this->panelInit->can( array("teachers.list","teachers.addTeacher","teachers.EditTeacher","teachers.delTeacher","teachers.Approve","teachers.teacLeaderBoard","teachers.Import","teachers.Export") )){
+			exit;
+		}
+
 		$toReturn = array();
 		$toReturn['teachers'] = \User::where('role','teacher')->where('activated','1');
 
@@ -87,12 +98,39 @@ class TeachersController extends Controller {
 
 		$toReturn['teachers'] = $toReturn['teachers']->take('20')->skip(20* ($page - 1) )->get()->toArray();
 
-		$toReturn['transports'] =  \transportation::get()->toArray();
+		$transport_vehicles = array();
+		$transport_vehicles_ =  \transport_vehicles::get()->toArray();
+		foreach ($transport_vehicles_ as $key => $value) {
+			$transport_vehicles[$value['id']] = $value['plate_number'] . " ( " .$value['driver_name'] ." )";
+		}
+
+		$toReturn['transports'] = array();
+		$toReturn['transport_vehicles'] = array();
+		$transports =  \transportation::get()->toArray();
+		foreach ($transports as $key => $value) {
+			$value['vehicles_list'] = json_decode($value['vehicles_list'],true);
+			$toReturn['transports'][$value['id']] = $value;
+			$toReturn['transports'][$value['id']]['vehicles'] = array();
+			if(is_array($value['vehicles_list'])){
+				foreach ($value['vehicles_list'] as $key_ => $value_) {
+					if(isset($transport_vehicles[ $value_ ])){
+						$toReturn['transports'][$value['id']]['vehicles'][ $value_ ] = $transport_vehicles[ $value_ ];					
+					}
+				}				
+			}
+		}
+
+		$toReturn['roles'] = \roles::select('id','role_title')->get();
+
 		return $toReturn;
 	}
 
 	public function export(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "teachers.Export" )){
+			exit;
+		}
+
 		$data = array(1 => array ( 'Full Name','User Name','E-mail','Gender','Address','Phone No','Mobile No','birthday','password'));
 		$student = \User::where('role','teacher')->get();
 		foreach ($student as $value) {
@@ -120,7 +158,10 @@ class TeachersController extends Controller {
 	}
 
 	public function exportpdf(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "teachers.Export" )){
+			exit;
+		}
 
 		$header = array ($this->panelInit->language['FullName'],$this->panelInit->language['username'],$this->panelInit->language['email'],$this->panelInit->language['Gender'],$this->panelInit->language['Address'],$this->panelInit->language['phoneNo'],$this->panelInit->language['mobileNo']);
 		$data = array();
@@ -164,7 +205,10 @@ class TeachersController extends Controller {
 	}
 
 	public function import($type){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "teachers.Import" )){
+			exit;
+		}
 
 		if (\Input::hasFile('excelcsv')) {
 			if ( $_FILES['excelcsv']['tmp_name'] )
@@ -173,7 +217,7 @@ class TeachersController extends Controller {
 
 				$dataImport = array("ready"=>array(),"revise"=>array());
 				foreach ($readExcel as $row)
-				{
+				{	
 					$importItem = array();
 					if(isset($row['full_name']) AND $row['full_name'] != null){
 						$importItem['fullName'] = $row['full_name'];
@@ -212,7 +256,7 @@ class TeachersController extends Controller {
 					if(isset($row['password']) AND $row['password'] != null){
 						$importItem['password'] = $row['password'];
 					}
-
+					
 					$checkUser = \User::where('username',$importItem['username'])->orWhere('email',$importItem['email']);
 					if($checkUser->count() > 0){
 						$checkUser = $checkUser->first();
@@ -238,7 +282,10 @@ class TeachersController extends Controller {
 	}
 
 	public function reviewImport(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "teachers.Import" )){
+			exit;
+		}
 
 		if(\Input::has('importReview')){
 			$importReview = \Input::get('importReview');
@@ -265,6 +312,14 @@ class TeachersController extends Controller {
 			if(count($dataImport['revise']) > 0){
 				return $this->panelInit->apiOutput(false,$this->panelInit->language['Import'],$this->panelInit->language['reviseImportData'],$dataImport);
 			}else{
+
+				//Get the default role
+				$def_role = \roles::where('def_for','teacher')->select('id');
+				if($def_role->count() == 0){
+					return $this->panelInit->apiOutput(false,'Import','No default role assigned for teachers, Please contact administartor');
+				}
+				$def_role = $def_role->first();
+
 				foreach($dataImport['ready'] as $value){
 					$User = new \User();
 					if(isset($value['email'])){
@@ -296,6 +351,7 @@ class TeachersController extends Controller {
 						$User->birthday = $value['birthday'];
 					}
 					$User->birthday = '["mail","sms","phone"]';
+					$User->role_perm = $def_role->id;
 					$User->account_active = "1";
 					$User->save();
 				}
@@ -309,6 +365,11 @@ class TeachersController extends Controller {
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "teachers.delTeacher" )){
+			exit;
+		}
+
 		if ( $postDelete = \User::where('role','teacher')->where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -319,7 +380,11 @@ class TeachersController extends Controller {
 	}
 
 	function account_status($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "teachers.EditTeacher" )){
+			exit;
+		}
+
 		$user = \User::where('role','teacher')->where('id',$id)->first();
 
 		if($user->account_active == "1"){
@@ -334,7 +399,10 @@ class TeachersController extends Controller {
 	}
 
 	function leaderboard($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "teachers.teacLeaderBoard" )){
+			exit;
+		}
 
 		$user = \User::where('id',$id)->first();
 		$user->isLeaderBoard = \Input::get('isLeaderBoard');
@@ -351,7 +419,11 @@ class TeachersController extends Controller {
 	}
 
 	function leaderboardRemove($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "teachers.teacLeaderBoard" )){
+			exit;
+		}
+
 		if ( $postDelete = \User::where('role','teacher')->where('id', $id)->where('isLeaderBoard','!=','')->first() )
         {
             \User::where('role','teacher')->where('id', $id)->update(array('isLeaderBoard' => ''));
@@ -362,12 +434,25 @@ class TeachersController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "teachers.addTeacher" )){
+			exit;
+		}
+
 		if(\User::where('username',trim(\Input::get('username')))->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['addTeacher'],$this->panelInit->language['usernameUsed']);
 		}
 		if(\User::where('email',\Input::get('email'))->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['addTeacher'],$this->panelInit->language['mailUsed']);
 		}
+
+		//Get the default role
+		$def_role = \roles::where('def_for','teacher')->select('id');
+		if($def_role->count() == 0){
+			return $this->panelInit->apiOutput(false,'Import','No default role assigned for teachers, Please contact administartor');
+		}
+		$def_role = $def_role->first();
+
 		$User = new \User();
 		$User->username = \Input::get('username');
 		$User->email = \Input::get('email');
@@ -379,6 +464,7 @@ class TeachersController extends Controller {
 		$User->phoneNo = \Input::get('phoneNo');
 		$User->mobileNo = \Input::get('mobileNo');
 		$User->transport = \Input::get('transport');
+		$User->transport_vehicle = \Input::get('transport_vehicle');
 		$User->user_position = \Input::get('user_position');
 		if(\Input::has('comVia')){
 			$User->comVia = json_encode(\Input::get('comVia'));
@@ -389,12 +475,20 @@ class TeachersController extends Controller {
 		}
 		if(\Input::has('biometric_id')){
 			$User->biometric_id = \Input::get('biometric_id');			
+		}else{
+			$User->biometric_id = "";
 		}
 		$User->account_active = "1";
+		$User->role_perm = $def_role->id;
 		$User->save();
 
 		if (\Input::hasFile('photo')) {
 			$fileInstance = \Input::file('photo');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addTeacher'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = "profile_".$User->id.".jpg";
 			$file = $fileInstance->move('uploads/profile/',$newFileName);
 
@@ -406,6 +500,11 @@ class TeachersController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "teachers.EditTeacher" )){
+			exit;
+		}
+		
 		$data = \User::where('role','teacher')->where('id',$id)->first()->toArray();
 		$data['birthday'] = $this->panelInit->unix_to_date($data['birthday']);
 
@@ -418,6 +517,11 @@ class TeachersController extends Controller {
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "teachers.EditTeacher" )){
+			exit;
+		}
+
 		if(\User::where('username',trim(\Input::get('username')))->where('id','<>',$id)->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['EditTeacher'],$this->panelInit->language['usernameUsed']);
 		}
@@ -436,6 +540,7 @@ class TeachersController extends Controller {
 		$User->phoneNo = \Input::get('phoneNo');
 		$User->mobileNo = \Input::get('mobileNo');
 		$User->transport = \Input::get('transport');
+		$User->transport_vehicle = \Input::get('transport_vehicle');
 		$User->user_position = \Input::get('user_position');
 		if(\Input::has('comVia')){
 			$User->comVia = json_encode(\Input::get('comVia'));
@@ -445,6 +550,11 @@ class TeachersController extends Controller {
 		}
 		if (\Input::hasFile('photo')) {
 			$fileInstance = \Input::file('photo');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['EditTeacher'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
 			$newFileName = "profile_".$User->id.".jpg";
 			$file = $fileInstance->move('uploads/profile/',$newFileName);
 
@@ -452,6 +562,8 @@ class TeachersController extends Controller {
 		}
 		if(\Input::has('biometric_id')){
 			$User->biometric_id = \Input::get('biometric_id');			
+		}else{
+			$User->biometric_id = "";
 		}
 		$User->save();
 

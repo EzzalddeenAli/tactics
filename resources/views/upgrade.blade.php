@@ -45,7 +45,7 @@
         <div class="login-register"  >
             <div class="login-box card" style="width:400px;">
             <div class="card-block">
-                <p class="login-box-msg text-center">Upgrade to OraSchool 4.0</p>
+                <p class="login-box-msg text-center">Upgrade to OraSchool 5.0</p>
                 <form action="{{URL::to('/upgrade')}}" method="post">
                     <input type="hidden" name="_token" value="<?php echo csrf_token(); ?>">
                     <div class="body">

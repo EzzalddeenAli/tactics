@@ -8,7 +8,7 @@ class AssignmentsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,15 +22,23 @@ class AssignmentsController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('Assignments')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("Assignments.list","Assignments.AddAssignments","Assignments.editAssignment","Assignments.delAssignment","Assignments.viewAnswers","Assignments.applyAssAnswer","Assignments.Download") )){
+			exit;
+		}
+
 		$toReturn = array();
-		$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get()->toArray();
+
+		if($this->data['users']->role == "teacher"){
+			$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->where('classTeacher','LIKE','%"'.$this->data['users']->id.'"%')->get()->toArray();
+		}else{
+			$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get()->toArray();
+		}
+
 		$classesArray = array();
 		foreach ($toReturn['classes'] as $class) {
 			$classesArray[$class['id']] = $class['className'];
@@ -39,11 +47,14 @@ class AssignmentsController extends Controller {
 		$toReturn['assignments'] = array();
 		if(count($classesArray) > 0){
 			$assignments = new \assignments();
-			if($this->data['users']->role == "teacher"){
-				$assignments = $assignments->where('teacherId',$this->data['users']->id);
-			}
 
-			if($this->data['users']->role == "student"){
+			if($this->data['users']->role == "teacher"){
+				$assignments = $assignments->where('teacherId',$this->data['users']->id)->where(function($query) use ($classesArray){
+									foreach($classesArray as $key => $value){
+										$query = $query->orWhere('classId','LIKE','%"'.$key.'"%');
+									}
+						        })->orderByRaw('AssignDeadLine + 0 Desc')->get();
+			}elseif($this->data['users']->role == "student"){
 				$assignments = $assignments->where('classId','LIKE','%"'.$this->data['users']->studentClass.'"%');
 				if($this->panelInit->settingsArray['enableSections'] == true){
 					$assignments = $assignments->where('sectionId','LIKE','%"'.$this->data['users']->studentSection.'"%');
@@ -135,8 +146,7 @@ class AssignmentsController extends Controller {
 									foreach($classesArray as $key => $value){
 										$query = $query->orWhere('classId','LIKE','%"'.$key.'"%');
 									}
-						        });
-				$assignments = $assignments->orderByRaw('AssignDeadLine + 0 Desc')->get();
+						        })->orderByRaw('AssignDeadLine + 0 Desc')->get();
 			}
 
 			$toReturn['userRole'] = $this->data['users']->role;
@@ -170,6 +180,11 @@ class AssignmentsController extends Controller {
 	}
 
 	public function download($id){
+
+		if(!$this->panelInit->can( array("Assignments.Download") )){
+			exit;
+		}
+
 		$toReturn = \assignments::where('id',$id)->first();
 		if(file_exists('uploads/assignments/'.$toReturn->AssignFile)){
 			$fileName = preg_replace('/[^a-zA-Z0-9-_\.]/','-',$toReturn->AssignTitle). "." .pathinfo($toReturn->AssignFile, PATHINFO_EXTENSION);
@@ -183,7 +198,11 @@ class AssignmentsController extends Controller {
 	}
 
 	public function delete($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "Assignments.delAssignment" )){
+			exit;
+		}
+
 		if ( $postDelete = \assignments::where('id', $id)->first() )
         {
 			@unlink("uploads/assignments/".$postDelete->AssignFile);
@@ -195,7 +214,11 @@ class AssignmentsController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "Assignments.AddAssignments" )){
+			exit;
+		}
+
 		$assignments = new \assignments();
 		$assignments->classId = json_encode(\Input::get('classId'));
 		if($this->panelInit->settingsArray['enableSections'] == true){
@@ -210,6 +233,11 @@ class AssignmentsController extends Controller {
 		$assignments->save();
 		if (\Input::hasFile('AssignFile')) {
 			$fileInstance = \Input::file('AssignFile');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['AddAssignments'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = "assignments_".uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/assignments/',$newFileName);
 
@@ -241,6 +269,11 @@ class AssignmentsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( array("Assignments.editAssignment","Assignments.viewAnswers","Assignments.applyAssAnswer") )){
+			exit;
+		}
+
 		$toReturn = \assignments::where('id',$id)->first();
 		$DashboardController = new DashboardController();
 		$toReturn['sections'] = $DashboardController->sectionsList(json_decode($toReturn->classId,true));
@@ -251,7 +284,11 @@ class AssignmentsController extends Controller {
 	}
 
 	function edit($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( array("Assignments.editAssignment","Assignments.viewAnswers","Assignments.applyAssAnswer") )){
+			exit;
+		}
+
 		$assignments = \assignments::find($id);
 		$assignments->classId = json_encode(\Input::get('classId'));
 		if($this->panelInit->settingsArray['enableSections'] == true){
@@ -262,8 +299,13 @@ class AssignmentsController extends Controller {
 		$assignments->AssignDescription = \Input::get('AssignDescription');
 		$assignments->AssignDeadLine = $this->panelInit->date_to_unix(\Input::get('AssignDeadLine'));
 		if (\Input::hasFile('AssignFile')) {
-			@unlink("uploads/assignments/".$assignments->AssignFile);
 			$fileInstance = \Input::file('AssignFile');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editAssignment'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			@unlink("uploads/assignments/".$assignments->AssignFile);
+
 			$newFileName = "assignments_".uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/assignments/',$newFileName);
 
@@ -277,6 +319,11 @@ class AssignmentsController extends Controller {
 	}
 
 	function checkUpload(){
+
+		if(!$this->panelInit->can( array("Assignments.editAssignment","Assignments.viewAnswers","Assignments.applyAssAnswer") )){
+			exit;
+		}
+
 		$toReturn = \assignments::where('id',\Input::get('assignmentId'))->first();
 
 		if($toReturn->AssignDeadLine < time()){
@@ -291,7 +338,11 @@ class AssignmentsController extends Controller {
 	}
 
 	function upload($id){
-		if($this->data['users']->role == "admin" || $this->data['users']->role == "teacher") exit;
+
+		if(!$this->panelInit->can( array("Assignments.viewAnswers","Assignments.applyAssAnswer") )){
+			exit;
+		}
+
 		$assignmentsAnswers = new \assignments_answers();
 		$assignmentsAnswers->assignmentId = $id;
 		$assignmentsAnswers->userId = $this->data['users']->id;
@@ -301,6 +352,11 @@ class AssignmentsController extends Controller {
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['applyAssAnswer'],$this->panelInit->language['assNoFilesUploaded']);
 		}elseif (\Input::hasFile('fileName')) {
 			$fileInstance = \Input::file('fileName');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['applyAssAnswer'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
 			$newFileName = "assignments_".uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/assignmentsAnswers/',$newFileName);
 
@@ -313,7 +369,10 @@ class AssignmentsController extends Controller {
 	}
 
 	function listAnswers($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "Assignments.viewAnswers" )){
+			exit;
+		}
 
 		$assignmentsAnswers = \DB::table('assignments_answers')
 								->leftJoin('users', 'users.id', '=', 'assignments_answers.userId')
@@ -337,6 +396,11 @@ class AssignmentsController extends Controller {
 	}
 
 	public function downloadAnswer($id){
+
+		if(!$this->panelInit->can( "Assignments.viewAnswers" )){
+			exit;
+		}
+
 		$toReturn = \assignments_answers::where('id',$id)->first();
 		$user = \User::where('id',$toReturn->userId)->first();
 		if(file_exists('uploads/assignmentsAnswers/'.$toReturn->fileName)){

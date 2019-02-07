@@ -8,7 +8,7 @@ class ClassScheduleController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,13 +22,15 @@ class ClassScheduleController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('classSch')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("classSch.list","classSch.addSch","classSch.editSch","classSch.delSch") )){
+			exit;
+		}
+
 		$toReturn = array();
 		$toReturn['classes'] = array();
 		if($this->panelInit->settingsArray['enableSections'] == true){
@@ -212,6 +214,11 @@ class ClassScheduleController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "classSch.list" )){
+			exit;
+		}
+
 		$arrayOfDays = array(0=>$this->panelInit->language['Sunday'],1=>$this->panelInit->language['Monday'],2=>$this->panelInit->language['Tuesday'],3=>$this->panelInit->language['Wednesday'],4=>$this->panelInit->language['Thurusday'],5=>$this->panelInit->language['Friday'],6=>$this->panelInit->language['Saturday']);
 
 		$subjectArray = array();
@@ -252,7 +259,11 @@ class ClassScheduleController extends Controller {
 	}
 
 	function addSub($class){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "classSch.addSch" )){
+			exit;
+		}
+
 		$classSchedule = new \class_schedule();
 		if($this->panelInit->settingsArray['enableSections'] == true){
 			$classSchedule->sectionId = $class;
@@ -294,7 +305,11 @@ class ClassScheduleController extends Controller {
 	}
 
 	public function delete($class,$id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "classSch.delSch" )){
+			exit;
+		}
+
 		if ( $postDelete = \class_schedule::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -305,6 +320,11 @@ class ClassScheduleController extends Controller {
 	}
 
 	function fetchSub($id){
+
+		if(!$this->panelInit->can( "classSch.editSch" )){
+			exit;
+		}
+
 		$sub = \class_schedule::where('id',$id)->first()->toArray();
 		$sub['startTime'] = str_split($sub['startTime'],2);
 		$sub['startTimeHour'] = intval($sub['startTime'][0]);
@@ -318,7 +338,11 @@ class ClassScheduleController extends Controller {
 	}
 
 	function editSub($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "classSch.editSch" )){
+			exit;
+		}
+
 		$classSchedule = \class_schedule::find($id);
 		$classSchedule->subjectId = \Input::get('subjectId');
 		$classSchedule->dayOfWeek = \Input::get('dayOfWeek');

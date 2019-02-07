@@ -8,7 +8,7 @@ class PollsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,19 +21,25 @@ class PollsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
 
-		if(!$this->panelInit->hasThePerm('Polls')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("Polls.list","Polls.addPoll","Polls.editPoll","Polls.delPoll") )){
+			exit;
+		}
+
 		return \polls::get();
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "Polls.delPoll" )){
+			exit;
+		}
+
 		if ( $postDelete = \polls::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -44,6 +50,11 @@ class PollsController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "Polls.addPoll" )){
+			exit;
+		}
+
 		$polls = new \polls();
 		$polls->pollTitle = \Input::get('pollTitle');
 		$polls->pollOptions = json_encode(\Input::get('pollOptions'));
@@ -55,6 +66,11 @@ class PollsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "Polls.editPoll" )){
+			exit;
+		}
+
 		$polls = \polls::where('id',$id)->first();
 		$polls->pollOptions = json_decode($polls->pollOptions,true);
 		if(!is_array($polls->pollOptions)){
@@ -64,6 +80,11 @@ class PollsController extends Controller {
 	}
 
 	function makeActive($id){
+
+		if(!$this->panelInit->can( "Polls.editPoll" )){
+			exit;
+		}
+
 		$polls = \polls::where('id',$id)->first();
 
 		$pollOptions = json_decode($polls->pollOptions,true);
@@ -80,6 +101,11 @@ class PollsController extends Controller {
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "Polls.editPoll" )){
+			exit;
+		}
+		
 		$polls = \polls::find($id);
 		$polls->pollTitle = \Input::get('pollTitle');
 		$polls->pollOptions = json_encode(\Input::get('pollOptions'));

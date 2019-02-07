@@ -9,8 +9,12 @@ class PdfBuilder {
         //require_once('app/libraries/TCPDF/tcpdf.php');
         $this->doc_details = $doc_details;
 
+        if(!isset($this->doc_details['orientation'])){
+        	$this->doc_details['orientation'] = 'P';
+        }
+
 		// create new PDF document
-		$this->tcpdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+		$this->tcpdf = new \TCPDF($this->doc_details['orientation'], 'mm', 'A4', true, 'UTF-8', false);
 		$this->tcpdf->SetCreator("OraSchool 4.0");
 		$this->tcpdf->SetAuthor($this->doc_details['author']);
 		$this->tcpdf->SetTitle($this->doc_details['title']);

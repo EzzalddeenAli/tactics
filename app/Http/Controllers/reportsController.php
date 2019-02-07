@@ -8,7 +8,7 @@ class reportsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,7 +22,7 @@ class reportsController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('Reports')){
+		if(!$this->panelInit->can( array("Reports.Reports") )){
 			exit;
 		}
 	}
@@ -43,13 +43,13 @@ class reportsController extends Controller {
 		if(\Input::get('stats') == 'stfVacation' AND $this->data['users']->role == "admin"){
             return $this->stfVacation(\Input::get('data'));
         }
-		if(\Input::get('stats') == 'payments' AND ( $this->data['users']->role == "admin" || $this->data['users']->role == "account" ) ){
+		if(\Input::get('stats') == 'payments' AND ( $this->data['users']->role == "admin" ) ){
             return $this->reports(\Input::get('data'));
         }
-        if(\Input::get('stats') == 'expenses' AND ( $this->data['users']->role == "admin" || $this->data['users']->role == "account" ) ){
+        if(\Input::get('stats') == 'expenses' AND ( $this->data['users']->role == "admin" ) ){
             return $this->expenses(\Input::get('data'));
         }
-        if(\Input::get('stats') == 'income' AND ( $this->data['users']->role == "admin" || $this->data['users']->role == "account" ) ){
+        if(\Input::get('stats') == 'income' AND ( $this->data['users']->role == "admin" ) ){
             return $this->income(\Input::get('data'));
         }
 		if(\Input::get('stats') == 'marksheetGenerationPrepare' AND $this->data['users']->role == "admin"){
@@ -58,10 +58,12 @@ class reportsController extends Controller {
         if(\Input::get('stats') == 'biometric_users' AND $this->data['users']->role == "admin"){
             return $this->biometric_users_generate();
         }
-        if(\Input::get('stats') == 'payroll' AND $this->data['users']->role == "admin" || $this->data['users']->role == "account"){
+        if(\Input::get('stats') == 'payroll' AND $this->data['users']->role == "admin"){
             return $this->payroll_payments(\Input::get('data'));
         }
-
+        if(\Input::get('stats') == 'certPrint' AND $this->data['users']->role == "admin"){
+            return $this->certPrint(\Input::get('data'));
+        }
 
 	}
 
@@ -87,10 +89,10 @@ class reportsController extends Controller {
         $toReturn['parents']['inactivated'] = \User::where('role','parent')->where('activated','0')->count();
         $toReturn['parents']['total'] = $toReturn['parents']['activated'] + $toReturn['parents']['inactivated'];
 
-        $toReturn['account'] = array();
-        $toReturn['account']['activated'] = \User::where('role','account')->where('activated','1')->count();
-        $toReturn['account']['inactivated'] = \User::where('role','account')->where('activated','0')->count();
-        $toReturn['account']['total'] = $toReturn['account']['activated'] + $toReturn['account']['inactivated'];
+        $toReturn['employee'] = array();
+        $toReturn['employee']['activated'] = \User::where('role','employee')->where('activated','1')->count();
+        $toReturn['employee']['inactivated'] = \User::where('role','employee')->where('activated','0')->count();
+        $toReturn['employee']['total'] = $toReturn['employee']['activated'] + $toReturn['employee']['inactivated'];
 
         return $toReturn;
     }
@@ -600,4 +602,98 @@ class reportsController extends Controller {
 		return $payroll_history;
 	}
 
+	public function preCert(){
+		$toReturn = array();
+		$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->select('id','className')->get()->toArray();
+		$toReturn['certs'] = \certificates::select('id','certificate_name')->get()->toArray();
+		return $toReturn;
+	}
+
+	public function certGetStdList(){
+		$User = \User::where('role','student')->where('studentClass',\Input::get('classId'));
+		if(\Input::has('sectionId')){
+			$User = $User->where('studentSection',\Input::get('sectionId'));
+		}
+		return $User->select('id','username','fullName','email')->get();
+	}
+
+	public function certPrint($data){
+		$to_return = array("certificate"=>array(),"users"=>array());
+
+		//Prepare std cat.
+		$std_cat = array();
+		$student_categories = \student_categories::select('id','cat_title')->get();
+		foreach ($student_categories as $key => $value) {
+			$std_cat[$value->id] = $value->cat_title;
+		}
+
+		//Prepare Classes
+		$classes_list = array();
+		$classes = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->select('id','className')->get();
+		foreach ($classes as $key => $value) {
+			$classes_list[$value->id] = $value->className;
+		}
+
+		//Prepare Section
+		$sections_list = array();
+		$sections = \sections::select('id','sectionName')->get();
+		foreach ($sections as $key => $value) {
+			$sections_list[$value->id] = $value->sectionName;
+		}
+
+
+		$User = \User::where('role','student')->whereIn('id',$data['selected_users'])->get()->toArray();
+		foreach ($User as $key => $value) {
+			$to_return['users'][$key] = array();
+			$to_return['users'][$key]['user_name'] = $value['username'];
+			$to_return['users'][$key]['full_name'] = $value['fullName'];
+			$to_return['users'][$key]['email'] = $value['email'];
+			$to_return['users'][$key]['date_of_birth'] = $this->panelInit->unix_to_date($value['birthday']);
+			$to_return['users'][$key]['gender'] = $value['gender'];
+			$to_return['users'][$key]['religion'] = $value['religion'];
+			$to_return['users'][$key]['phone_number'] = $value['phoneNo'];
+			$to_return['users'][$key]['mobile_number'] = $value['mobileNo'];
+			$to_return['users'][$key]['address'] = $value['address'];
+			$to_return['users'][$key]['admission_number'] = $value['admission_number'];
+			$to_return['users'][$key]['admission_date'] = $this->panelInit->unix_to_date($value['admission_date']);
+			$to_return['users'][$key]['roll_id'] = $value['studentRollId'];
+			if(isset($std_cat[ $value['std_category'] ])){
+				$to_return['users'][$key]['student_category'] = $std_cat[ $value['std_category'] ];
+			}else{
+				$to_return['users'][$key]['student_category'] = "";
+			}
+			if(isset($classes_list[ $value['studentClass'] ])){
+				$to_return['users'][$key]['class_name'] = $classes_list[ $value['studentClass'] ];
+			}else{
+				$to_return['users'][$key]['class_name'] = "";
+			}
+			if(isset($classes_list[ $value['studentSection'] ])){
+				$to_return['users'][$key]['section_name'] = $sections_list[ $value['studentSection'] ];
+			}else{
+				$to_return['users'][$key]['section_name'] = "";
+			}
+			
+			$value['father_info'] = json_decode($value['father_info'],true);
+			if(is_array($value['father_info']) AND isset($value['father_info']['name'])){
+				$to_return['users'][$key]['father_name'] = $value['father_info']['name'];
+			}else{
+				$to_return['users'][$key]['father_name'] = "";
+			}
+
+			$value['mother_info'] = json_decode($value['mother_info'],true);
+			if(is_array($value['father_info']) AND isset($value['mother_info']['name'])){
+				$to_return['users'][$key]['mother_name'] = $value['mother_info']['name'];
+			}else{
+				$to_return['users'][$key]['mother_name'] = "";
+			}
+
+		}
+
+		$to_return['certificate'] = \certificates::where('id',$data['certId'])->first();
+
+		$certificatesController = new certificatesController();
+		$to_return['margins'] = $certificatesController->certificate_margins;
+
+		return $to_return;
+	}
 }

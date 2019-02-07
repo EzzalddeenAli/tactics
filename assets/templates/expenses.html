@@ -11,7 +11,13 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addExpense}}</button>
+                <button ng-show="$root.can('Expenses.addExpense')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addExpense}}</button>
+                <div class="pull-right card-block-input-group card-block-input-item">
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
+                        <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                    </div>
+                </div>
                 <h4 class="card-title">{{phrase.Expenses}}</h4>
                 <div class="table-responsive">
 
@@ -25,7 +31,7 @@
                                 <th>{{phrase.notes}}</th>
                                 <th>{{phrase.Operations}}</th>
                             </tr>
-                            <tr dir-paginate="expense in expenses | itemsPerPage:20" total-items="totalItems">
+                            <tr dir-paginate="expense in expenses  | filter:searchText | itemsPerPage:20" total-items="totalItems">
                                 <td>{{expense.expenseTitle}}</td>
                                 <td>{{expenses_cat[expense.expenseCategory]}}</td>
                                 <td>{{expense.expenseAmount}}</td>
@@ -33,12 +39,13 @@
                                 <td>{{expense.expenseNotes}}</td>
                                 <td>
                                     <a ng-show="expense.expenseImage != ''" target="_blank" href="{{'index.php/expenses/download/'+expense.id}}"><button type="button" class="btn btn-success btn-circle" title="{{phrase.Download}}" tooltip><i class="fa fa-cloud-download"></i></button></a>
-                                    <button ng-click="edit(expense.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(expense,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                    <button ng-show="$root.can('Expenses.editExpense')" ng-click="edit(expense.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('Expenses.delExpense')" ng-click="remove(expense,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+                    {{phrase.Total}} : {{totalExpenses}}
                     <dir-pagination-controls class="pull-right" on-page-change="listExpenses(newPageNumber)" template-url="assets/templates/dirPagination.html" ></dir-pagination-controls>
 
                 </div>

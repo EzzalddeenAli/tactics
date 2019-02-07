@@ -8,7 +8,7 @@ class expensesController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,15 +21,16 @@ class expensesController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "account") exit;
 
-		if(!$this->panelInit->hasThePerm('accounting')){
-			exit;
-		}
 	}
 
 	public function listAll($page = 1)
 	{
+
+		if(!$this->panelInit->can( array("Expenses.list","Expenses.addExpense","Expenses.editExpense","Expenses.delExpense") )){
+			exit;
+		}
+		
 		$toReturn = array();
 
 		$toReturn['expenses'] = new \expenses();
@@ -37,8 +38,10 @@ class expensesController extends Controller {
 		$toReturn['totalItems'] = $toReturn['expenses']->count();
 		$toReturn['expenses'] = $toReturn['expenses']->orderBy('id','DESC')->take('20')->skip(20* ($page - 1) )->get()->toArray();
 
+		$toReturn['totalExpenses'] = 0;
 		foreach($toReturn['expenses'] as $key => $value){
 			$toReturn['expenses'][$key]['expenseDate'] = $this->panelInit->unix_to_date($toReturn['expenses'][$key]['expenseDate']);
+			$toReturn['totalExpenses'] += $value['expenseAmount'];
 		}
 
 		$expenses_cat = \expenses_cat::select('id','cat_title')->get()->toArray();
@@ -50,6 +53,11 @@ class expensesController extends Controller {
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "Expenses.delExpense" )){
+			exit;
+		}
+
 		if ( $postDelete = \expenses::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -60,6 +68,11 @@ class expensesController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "Expenses.addExpense" )){
+			exit;
+		}
+
 		$expenses = new \expenses();
 		$expenses->expenseDate = $this->panelInit->date_to_unix(\Input::get('expenseDate'));
 		$expenses->expenseTitle = \Input::get('expenseTitle');
@@ -72,6 +85,11 @@ class expensesController extends Controller {
 
 		if (\Input::hasFile('expenseImage')) {
 			$fileInstance = \Input::file('expenseImage');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addExpense'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/expenses/',$newFileName);
 
@@ -85,6 +103,11 @@ class expensesController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "Expenses.editExpense" )){
+			exit;
+		}
+
 		$expenses = \expenses::where('id',$id)->first();
 		$expenses->expenseDate = $this->panelInit->unix_to_date($expenses->expenseDate);
 
@@ -105,6 +128,11 @@ class expensesController extends Controller {
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "Expenses.editExpense" )){
+			exit;
+		}
+		
 		$expenses = \expenses::find($id);
 		$expenses->expenseDate = $this->panelInit->date_to_unix(\Input::get('expenseDate'));
 		$expenses->expenseTitle = \Input::get('expenseTitle');
@@ -116,6 +144,11 @@ class expensesController extends Controller {
 
 		if (\Input::hasFile('expenseImage')) {
 			$fileInstance = \Input::file('expenseImage');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editExpense'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
 			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/expenses/',$newFileName);
 

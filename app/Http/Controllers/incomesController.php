@@ -8,7 +8,7 @@ class incomesController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,15 +21,16 @@ class incomesController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "account") exit;
 
-		if(!$this->panelInit->hasThePerm('accounting')){
-			exit;
-		}
 	}
 
 	public function listAll($page = 1)
 	{
+
+		if(!$this->panelInit->can( array("Incomes.list","Incomes.addIncome","Incomes.editIncome","Incomes.delIncome") )){
+			exit;
+		}
+
 		$toReturn = array();
 
 		$toReturn['incomes'] = new \income();
@@ -37,8 +38,10 @@ class incomesController extends Controller {
 		$toReturn['totalItems'] = $toReturn['incomes']->count();
 		$toReturn['incomes'] = $toReturn['incomes']->orderBy('id','DESC')->take('20')->skip(20* ($page - 1) )->get()->toArray();
 
+		$toReturn['totalIncome'] = 0;
 		foreach($toReturn['incomes'] as $key => $value){
 			$toReturn['incomes'][$key]['incomeDate'] = $this->panelInit->unix_to_date($toReturn['incomes'][$key]['incomeDate']);
+			$toReturn['totalIncome'] += $value['incomeAmount'];
 		}
 
 		$income_cat = \income_cat::select('id','cat_title')->get()->toArray();
@@ -50,16 +53,26 @@ class incomesController extends Controller {
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "Incomes.delIncome" )){
+			exit;
+		}
+
 		if ( $postDelete = \income::where('id', $id)->first() )
         {
             $postDelete->delete();
-            return $this->panelInit->apiOutput(true,"Delete Income","Income added successfully");
+            return $this->panelInit->apiOutput(true,$this->panelInit->language['delIncome'],$this->panelInit->language['incDeleted']);
         }else{
-            return $this->panelInit->apiOutput(false,"Delete Income","Income not exist");
+            return $this->panelInit->apiOutput(false,$this->panelInit->language['delIncome'],$this->panelInit->language['incNotExist']);
         }
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "Incomes.addIncome" )){
+			exit;
+		}
+
 		$income = new \income();
 		$income->incomeDate = $this->panelInit->date_to_unix(\Input::get('incomeDate'));
 		$income->incomeTitle = \Input::get('incomeTitle');
@@ -72,6 +85,11 @@ class incomesController extends Controller {
 
 		if (\Input::hasFile('incomeImage')) {
 			$fileInstance = \Input::file('incomeImage');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addIncome'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/income/',$newFileName);
 
@@ -81,10 +99,15 @@ class incomesController extends Controller {
 
 		$income->incomeDate = \Input::get('incomeDate');
 
-		return $this->panelInit->apiOutput(true,"Create Income","Income created successully",$income->toArray() );
+		return $this->panelInit->apiOutput(true,$this->panelInit->language['addIncome'],$this->panelInit->language['incAdded'],$income->toArray() );
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "Incomes.editIncome" )){
+			exit;
+		}
+
 		$income = \income::where('id',$id)->first();
 		$income->incomeDate = $this->panelInit->unix_to_date($income->incomeDate);
 
@@ -105,6 +128,11 @@ class incomesController extends Controller {
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "Incomes.editIncome" )){
+			exit;
+		}
+		
 		$income = \income::find($id);
 		$income->incomeDate = $this->panelInit->date_to_unix(\Input::get('incomeDate'));
 		$income->incomeTitle = \Input::get('incomeTitle');
@@ -116,6 +144,11 @@ class incomesController extends Controller {
 
 		if (\Input::hasFile('incomeImage')) {
 			$fileInstance = \Input::file('incomeImage');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editIncome'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
 			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/income/',$newFileName);
 
@@ -127,6 +160,6 @@ class incomesController extends Controller {
 
 		$income->incomeDate = \Input::get('incomeDate');
 
-		return $this->panelInit->apiOutput(true,"Edit Income","Income modified successully",$income->toArray() );
+		return $this->panelInit->apiOutput(true,$this->panelInit->language['editIncome'],$this->panelInit->language['incModified'],$income->toArray() );
 	}
 }

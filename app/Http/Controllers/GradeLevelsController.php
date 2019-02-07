@@ -8,7 +8,7 @@ class GradeLevelsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,19 +21,25 @@ class GradeLevelsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
 
-		if(!$this->panelInit->hasThePerm('gradeLevels')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("gradeLevels.list","gradeLevels.addLevel","gradeLevels.editGrade","gradeLevels.delGradeLevel") )){
+			exit;
+		}
+
 		return \grade_levels::get();
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "gradeLevels.delGradeLevel" )){
+			exit;
+		}
+
 		if ( $postDelete = \grade_levels::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -44,6 +50,11 @@ class GradeLevelsController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "gradeLevels.addLevel" )){
+			exit;
+		}
+
 		$gradeLevels = new \grade_levels();
 		$gradeLevels->gradeName = \Input::get('gradeName');
 		$gradeLevels->gradeDescription = \Input::get('gradeDescription');
@@ -56,10 +67,20 @@ class GradeLevelsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "gradeLevels.editGrade" )){
+			exit;
+		}
+
 		return \grade_levels::where('id',$id)->first();
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "gradeLevels.editGrade" )){
+			exit;
+		}
+		
 		$gradeLevels = \grade_levels::find($id);
 		$gradeLevels->gradeName = \Input::get('gradeName');
 		$gradeLevels->gradeDescription = \Input::get('gradeDescription');

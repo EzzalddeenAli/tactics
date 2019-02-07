@@ -53,7 +53,7 @@
                                                 <img alt="{{message.fullName}}" class="user-image img-circle" style="width:40px; height:40px;" ng-src="{{'index.php/dashboard/profileImage/'+message.userId}}">
                                                 {{message.fullName}}
                                             </td>
-                                            <td class="max-texts"> <a href="#messages/{{message.id}}"> {{message.lastMessage}}</a> </td>
+                                            <td class="max-texts"> <a href="portal#messages/{{message.id}}"> {{message.lastMessage}}</a> </td>
                                             <td class="text-right"> {{message.lastMessageDate}} </td>
                                         </tr>
                                         <tr ng-show="!messages.length"><td class="noTableData" colspan="4">{{phrase.noMessages}}</td></tr>
@@ -73,7 +73,7 @@
 
 <div class="card" ng-show="views.read">
     <div class="card-block">
-        <button ng-click="changeView('list')" class="btn btn-danger btn-flat pull-right card-block-input-item">{{phrase.Return}}</button>
+        <a href="portal#/messages" class="btn btn-danger btn-flat pull-right card-block-input-item">{{phrase.Return}}</a>
         <h4 class="card-title">{{messageDet.fullName}}</h4>
         <div class="chat-box">
             <!--chat Row -->
@@ -86,7 +86,7 @@
                             <h5>{{messageOne.fullName}}</h5>
                             <div class="box" ng-class="{'bg-light-inverse': messageOne.userId == $root.dashboardData.baseUser.id,'bg-light-info': messageOne.userId != $root.dashboardData.baseUser.id}">{{messageOne.messageText}}</div>
                         </div>
-                        <div class="chat-img"><img ng-src="{{'index.php/dashboard/profileImage/'+messageOne.userId}}" alt="{{messageOne.fullName}}" /></div>
+                        <div class="chat-img"><img ng-src="{{'index.php/dashboard/profileImage/'+messageOne.userId}}" style="width: 45px;height: 45px;" alt="{{messageOne.fullName}}" /></div>
                         <div style="clear: both;"></div>
                         <div class="chat-time pull-right">{{messageOne.dateSentH}}</div>
                     </div>
@@ -126,8 +126,10 @@
                         <div class="form-group row" ng-class="{'has-error': sendMessage.toId.$invalid}">
                             <label class="col-sm-2 text-right control-label col-form-label">{{phrase.sendMessageTo}} * </label>
                             <div class="col-sm-10 row">
-                                <div class="col-md-10"><input type="text" name="toId" ng-model="form.toId" class="form-control" required placeholder="{{phrase.sendMessageTo}}"></div>
-                                <div class="col-md-2"><button type="button" ng-click="linkUser()" class="btn btn-danger btn-flat">{{phrase.searchUsers}}</button></div>
+                                <div class="col-sm-10">
+                                    <a class="message-user" href="javascript:void(0)" ng-repeat="user in form.toId"><img src="{{'index.php/dashboard/profileImage/'+user.id}}" alt="user" style="width:35px;height: 35px;" class="img-circle"> {{user.name}}</a>
+                                </div>
+                                <div class="col-sm-2"><button type="button" ng-click="linkUser()" class="btn btn-danger btn-flat">{{phrase.searchUsers}}</button></div>
                             </div>
                         </div>
                         <div class="form-group row" ng-class="{'has-error': sendMessage.messageText.$invalid}">

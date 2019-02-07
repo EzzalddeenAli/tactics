@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addFeeAllocation}}</button>
+                <button ng-show="$root.can('FeeAllocation.addFeeAllocation')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addFeeAllocation}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
@@ -28,16 +28,16 @@
                                 <th>{{phrase.FeeGroup}}</th>
                                 <th>{{phrase.FeeType}}</th>
                                 <th>{{phrase.allocatedTo}}</th>
-                                <th style="width:120px;">{{phrase.Operations}}</th>
+                                <th style="width:120px;" ng-show="$root.can('FeeAllocation.editFeeAllocation') || $root.can('FeeAllocation.delFeeAllocation')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="allocation in feeAllocation | filter:searchText">
                                 <td>{{allocation.feeTitle}}</td>
                                 <td>{{allocation.feeGroup}}</td>
                                 <td>{{allocation.feeType}}</td>
                                 <td>{{allocation.feeFor}}</td>
-                                <td style="width:120px;">
-                                    <button ng-click="edit(allocation.id,'class')" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(allocation,$index,'class')" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td style="width:120px;" ng-show="$root.can('FeeAllocation.editFeeAllocation') || $root.can('FeeAllocation.delFeeAllocation')">
+                                    <button ng-show="$root.can('FeeAllocation.editFeeAllocation')" ng-click="edit(allocation.id,'class')" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('FeeAllocation.delFeeAllocation')" ng-click="remove(allocation,$index,'class')" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!feeAllocation.length"><td class="noTableData" colspan="6">{{phrase.noFeeAllocAv}}</td></tr>

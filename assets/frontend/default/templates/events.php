@@ -13,7 +13,11 @@
 
 							<div id="blog-listing-medium" >
 
-								<?php foreach ($template_vars['events_list'] as $value) { ?>
+								<?php 
+								if(!isset($template_vars['events_list'])){
+									$template_vars['events_list'] = array();
+								}
+								foreach ($template_vars['events_list'] as $value) { ?>
 									<section class="post">
 										<div class="row">
 											<div class="col-md-4">

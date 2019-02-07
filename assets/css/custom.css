@@ -81,7 +81,9 @@
 .has-error .form-control-feedback {
   color: #a94442;
 }
-
+.tooltip-inner {
+    white-space:pre-wrap;
+}
 
 /*
     Colorbox Core Style:
@@ -267,6 +269,29 @@
 }
 .topbar{
 	z-index: 501;
+}
+.list_user_item{
+	white-space: nowrap;
+	display: inline-block;
+	padding-bottom: 10px;
+}
+
+.list_user_item img{
+	margin-right: 5px;
+}
+
+.att_perc{
+	color: royalblue;
+}
+
+.message-user{
+    border: 1px solid #999999;
+    display: inline-block;
+    padding: 4px;
+    padding-right: 8px;
+    border-radius: 10px;
+    margin: 5px;
+    margin-top: 0px;
 }
 
 @media print

@@ -8,7 +8,7 @@ class LanguagesController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,19 +21,24 @@ class LanguagesController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
-
-		if(!$this->panelInit->hasThePerm('Languages')){
-			exit;
-		}
+		
 	}
 
 	public function listAll()
 	{
-		return \languages::get();
+		if(!$this->panelInit->can( array("Languages.list","Languages.addLanguage","Languages.editLanguage","Languages.delLanguage") )){
+			exit;
+		}
+
+		return \languages::select('id','languageTitle')->get();
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "Languages.delLanguage" )){
+			exit;
+		}
+
 		if ( $postDelete = \languages::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -44,6 +49,11 @@ class LanguagesController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "Languages.addLanguage" )){
+			exit;
+		}
+
 		$languages = new \languages();
 		$languages->languageTitle = \Input::get('languageTitle');
 		$languages->languageUniversal = \Input::get('languageUniversal');
@@ -55,12 +65,22 @@ class LanguagesController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "Languages.editLanguage" )){
+			exit;
+		}
+		
 		$languages = \languages::where('id',$id)->first()->toArray();
 		$languages['languagePhrases'] = json_decode($languages['languagePhrases'],true);
 		return $languages;
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "Languages.editLanguage" )){
+			exit;
+		}
+		
 		$languages = \languages::find($id);
 		$languages->languageTitle = \Input::get('languageTitle');
 		$languages->languageUniversal = \Input::get('languageUniversal');

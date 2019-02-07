@@ -11,10 +11,10 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addHomework}}</button>
+                <button ng-show="$root.can('Homework.addHomework')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addHomework}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
-                        <input type="text"  name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control input-sm">
+                        <input type="text"  name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" ng-change="searchDB()" class="form-control input-sm">
                         <span class="input-group-addon"><i class="fa fa-search"></i></span>
                     </div>
                 </div>
@@ -28,10 +28,10 @@
                                 <th>{{phrase.HomeworkTitle}}</th>
                                 <th>{{phrase.Date}}</th>
                                 <th>{{phrase.class}} / {{phrase.section}}</th>
-                                <th style="width:200px;">{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('Homework.View') || ($root.can('Homework.Download') && homework.homeworkFile != '') || $root.can('Homework.editHomework') || $root.can('Homework.delHomework')" style="width:200px;">{{phrase.Operations}}</th>
                             </tr>
                         </thead>
-                        <tbody ng-repeat="homework in homeworks | filter:searchText">
+                        <tbody dir-paginate="homework in homeworks | itemsPerPage:20" total-items="totalItems">
                             <tr>
                                 <td>{{homework.id}}</td>
                                 <td>{{homework.homeworkTitle}}</td>
@@ -45,16 +45,17 @@
                                     <span ng-show="homework.sections">{{phrase.section}} : {{homework.sections}} <br/></span>
                                     {{phrase.Subject}} : {{homework.subject}}
                                 </td>
-                                <td>
-                                  <button ng-click="viewhomework(homework.id)" type="button" class="btn btn-warning btn-circle" title="{{phrase.View}}" tooltip><i class="fa fa-eye"></i></button>
-                                  <a ng-show="homework.homeworkFile != ''" target="_blank" href="{{'index.php/homeworks/download/'+homework.id}}"><button type="button" class="btn btn-warning btn-circle" title="{{phrase.Download}}" tooltip><i class="fa fa-cloud-download"></i></button></a>
-                                  <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="edit(homework.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                  <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="remove(homework,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('Homework.View') || ($root.can('Homework.Download') && homework.homeworkFile != '') || $root.can('Homework.editHomework') || $root.can('Homework.delHomework')">
+                                  <button ng-show="$root.can('Homework.View')" ng-click="viewhomework(homework.id)" type="button" class="btn btn-warning btn-circle" title="{{phrase.View}}" tooltip><i class="fa fa-eye"></i></button>
+                                  <a ng-show="$root.can('Homework.Download') && homework.homeworkFile != ''" target="_blank" href="{{'index.php/homeworks/download/'+homework.id}}"><button type="button" class="btn btn-warning btn-circle" title="{{phrase.Download}}" tooltip><i class="fa fa-cloud-download"></i></button></a>
+                                  <button ng-show="$root.can('Homework.editHomework')" ng-click="edit(homework.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                  <button ng-show="$root.can('Homework.delHomework')" ng-click="remove(homework,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                         </tbody>
                         <tbody ng-show="homeworks.length == '0'"><tr><td class="noTableData" colspan="5">{{phrase.noHomeworks}}</td></tr></tbody>
                     </table>
+                    <dir-pagination-controls class="pull-right" on-page-change="pageChanged(newPageNumber)" template-url="assets/templates/dirPagination.html" ></dir-pagination-controls>
 
                 </div>
             </div>
@@ -220,7 +221,7 @@
         <!-- Nav tabs -->
         <ul class="nav nav-tabs tabsItem" role="tablist">
             <li class="nav-item" role="presentation"><a showtab="" class="nav-link active" href="#homework" aria-controls="homework" role="tab" data-toggle="tab">{{phrase.Homework}}</a></li>
-            <li class="nav-item" role="presentation" ng-show="homeworkmodal_data.student_applied != null || homeworkmodal_data.student_not_applied != null"><a showtab="" class="nav-link" href="#answers" aria-controls="answers" role="tab" data-toggle="tab">{{phrase.Answers}}</a></li>
+            <li class="nav-item" role="presentation" ng-show="$root.can('Homework.Answers') && (homeworkmodal_data.student_applied != null || homeworkmodal_data.student_not_applied != null)"><a showtab="" class="nav-link" href="#answers" aria-controls="answers" role="tab" data-toggle="tab">{{phrase.Answers}}</a></li>
         </ul>
 
         <!-- Tab panes -->
@@ -281,7 +282,7 @@
                 </div>
 
             </div>
-            <div role="tabpanel" class="tab-pane p-20" id="answers" ng-show="homeworkmodal_data.student_applied != null || homeworkmodal_data.student_not_applied != null">
+            <div role="tabpanel" class="tab-pane p-20" id="answers" ng-show="$root.can('Homework.Answers') && (homeworkmodal_data.student_applied != null || homeworkmodal_data.student_not_applied != null)">
 
                 <div class="form-group row" ng-show="userRole == 'admin' || userRole == 'teacher'">
                     <div class="col-sm-6">

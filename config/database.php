@@ -52,7 +52,7 @@ return [
             'port' => '3306',
             'database' => 'tactics',
             'username' => 'tacticsuser',
-            'password' => '*******',
+            'password' => '********',
             'charset' => 'utf8',
             'collation' => 'utf8_unicode_ci',
             'strict' => false,

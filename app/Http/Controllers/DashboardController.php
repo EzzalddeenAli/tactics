@@ -8,7 +8,7 @@ class DashboardController extends Controller {
 	//var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -36,9 +36,7 @@ class DashboardController extends Controller {
 
 	public function cms($method = "main")
 	{
-		if($this->data['users']->role == "admin" AND $this->panelInit->version != $this->panelInit->settingsArray['latestVersion']){
-			$this->data['latestVersion'] = $this->panelInit->settingsArray['latestVersion'];
-		}
+		
 		$this->data['role'] = $this->data['users']->role;
 		$this->data['languagesList'] = \languages::select('id','languageTitle')->get();
 
@@ -76,6 +74,8 @@ class DashboardController extends Controller {
 		$toReturn['activatedModules'] = json_decode($this->panelInit->settingsArray['activatedModules']);
 		$toReturn['country'] = $this->panelInit->settingsArray['country'];
 		$toReturn['wysiwyg_type'] = $this->panelInit->settingsArray['wysiwyg_type'];
+		$toReturn['sAttendanceInOut'] = $this->panelInit->settingsArray['sAttendanceInOut'];
+		$toReturn['perms'] = $this->panelInit->perms;
 
 		$toReturn['sort'] = array();
 		if(isset($this->data['panelInit']->settingsArray['studentsSort'])){
@@ -376,6 +376,11 @@ class DashboardController extends Controller {
 			}
 		}
 
+		//Birthday
+		$toReturn['birthday'] = \DB::select( \DB::raw("SELECT id,fullName,birthday,username  FROM users WHERE DATE_FORMAT(FROM_UNIXTIME(birthday),'%m-%d') = DATE_FORMAT(NOW(),'%m-%d')") );
+		foreach ($toReturn['birthday'] as $key => $value) {
+			$toReturn['birthday'][$key]->age = date("Y", time()) - date("Y", $value->birthday);
+		}
 
 		return json_encode($toReturn);
 	}
@@ -393,6 +398,9 @@ class DashboardController extends Controller {
 		$toReturn['language'] = $this->panelInit->language;
 		$toReturn['languageUniversal'] = $this->panelInit->languageUniversal;
 		$toReturn['role'] = $this->data['users']->role;
+		$toReturn['sAttendanceInOut'] = $this->panelInit->settingsArray['sAttendanceInOut'];
+		$toReturn['perms'] = $this->panelInit->perms;
+		
 		if($this->data['users']->role == "admin"){
 			if($this->data['users']->customPermissionsType == "full"){
 				$toReturn['adminPerm'] = "full";
@@ -498,8 +506,9 @@ class DashboardController extends Controller {
 
 		$toReturn['baseUser'] = array("id"=>$this->data['users']->id,"fullName"=>$this->data['users']->fullName,"username"=>$this->data['users']->username);
 
-		$polls = \polls::where('pollTarget',$this->data['users']->role)->orWhere('pollTarget','all')->where('pollStatus','1')->first();
-		if(count($polls) > 0){
+		$polls = \polls::where('pollTarget',$this->data['users']->role)->orWhere('pollTarget','all')->where('pollStatus','1');
+		if($polls->count() > 0){
+			$polls = $polls->first();
 			$toReturn['polls']['title'] = $polls->pollTitle;
 			$toReturn['polls']['id'] = $polls->id;
 			$toReturn['polls']['view'] = "vote";
@@ -525,7 +534,7 @@ class DashboardController extends Controller {
 
 		return json_encode($toReturn);
 	}
-
+	
 	public function pay($id){
 		$return = array();
 		$return['payment'] = \payments::where('id',$id);
@@ -571,7 +580,7 @@ class DashboardController extends Controller {
 			<html><head></head><body></div>
 			<script>
 			    var form = document.createElement("form"); form.setAttribute("method", "post");
-			    form.setAttribute("action", "https://sandbox.2checkout.com/checkout/purchase");
+			    form.setAttribute("action", "https://www.2checkout.com/checkout/purchase");
 
 			    params = {'sid':'<?php echo $this->panelInit->settingsArray['twocheckoutsid']; ?>','mode':'2CO','li_0_type':'product','li_0_name':'<?php echo $return['payment']['paymentTitle']; ?>','li_0_quantity':1,'li_0_price':'<?php echo number_format($pendingAmount,2,".",false); ?>','li_0_tangible':'N','merchant_order_id':'<?php echo $return['payment']['id']; ?>','x_receipt_link_url':'<?php echo \URL::to('/invoices/paySuccess/'.$id); ?>'};
 			    for(var key in params) { if(params.hasOwnProperty(key)) { var hiddenField = document.createElement("input"); hiddenField.setAttribute("type", "hidden"); hiddenField.setAttribute("name", key); hiddenField.setAttribute("value", params[key]); form.appendChild(hiddenField); } }
@@ -870,8 +879,9 @@ class DashboardController extends Controller {
 	public function savePolls(){
 		$toReturn = array();
 
-		$polls = \polls::where('pollTarget',$this->data['users']->role)->orWhere('pollTarget','all')->where('pollStatus','1')->where('id',\Input::get('id'))->first();
-		if(count($polls) > 0){
+		$polls = \polls::where('pollTarget',$this->data['users']->role)->orWhere('pollTarget','all')->where('pollStatus','1')->where('id',\Input::get('id'));
+		if($polls->count() > 0){
+			$polls = $polls->count();
 			$userVoted = json_decode($polls->userVoted,true);
 			if(!is_array($userVoted)){
 				$userVoted = array();
@@ -897,7 +907,7 @@ class DashboardController extends Controller {
 			reset($toReturn['polls']['items']);
 			foreach($toReturn['polls']['items'] as $key => $value){
 				if(isset($toReturn['polls']['items'][$key]['count'])){
-					$toReturn['polls']['items'][$key]['perc'] = ($toReturn['polls']['items'][$key]['count'] * 100) / $toReturn['polls']['totalCount'];
+					$toReturn['polls']['items'][$key]['perc'] = round(($toReturn['polls']['items'][$key]['count'] * 100) / $toReturn['polls']['totalCount'],2);
 				}
 			}
 			$polls->pollOptions = json_encode($toReturn['polls']['items']);
@@ -937,7 +947,7 @@ class DashboardController extends Controller {
 			    $eventsArray['date'] = $this->panelInit->unix_to_date($event->AssignDeadLine);
 			    $eventsArray['backgroundColor'] = 'green';
 			    $eventsArray['textColor'] = '#fff';
-				$eventsArray['url'] = "#assignments";
+				$eventsArray['url'] = "portal#assignments";
 			    $eventsArray['allDay'] = true;
 			    $toReturn[] = $eventsArray;
 			}
@@ -958,7 +968,7 @@ class DashboardController extends Controller {
 			    $eventsArray['date'] = $this->panelInit->unix_to_date($event->homeworkSubmissionDate);
 			    $eventsArray['backgroundColor'] = '#539692';
 			    $eventsArray['textColor'] = '#fff';
-				$eventsArray['url'] = "#homework";
+				$eventsArray['url'] = "portal#homework";
 			    $eventsArray['allDay'] = true;
 			    $toReturn[] = $eventsArray;
 			}
@@ -973,7 +983,7 @@ class DashboardController extends Controller {
 			$eventsArray['start'] = $this->panelInit->unix_to_date($event->eventDate,'d-m-Y');
 		    $eventsArray['date'] = $this->panelInit->unix_to_date($event->eventDate);
 		    $eventsArray['backgroundColor'] = 'blue';
-			$eventsArray['url'] = "#events/".$event->id;
+			$eventsArray['url'] = "portal#events/".$event->id;
 		    $eventsArray['textColor'] = '#fff';
 		    $eventsArray['allDay'] = true;
 		    $toReturn[] = $eventsArray;
@@ -990,7 +1000,7 @@ class DashboardController extends Controller {
 			$eventsArray['start'] = $this->panelInit->unix_to_date($event->examDate,'d-m-Y');
 		    $eventsArray['date'] = $this->panelInit->unix_to_date($event->examDate);
 		    $eventsArray['backgroundColor'] = 'red';
-			$eventsArray['url'] = "#examsList";
+			$eventsArray['url'] = "portal#examsList";
 		    $eventsArray['textColor'] = '#fff';
 		    $eventsArray['allDay'] = true;
 		    $toReturn[] = $eventsArray;
@@ -1004,7 +1014,7 @@ class DashboardController extends Controller {
 			$eventsArray['title'] =  $this->panelInit->language['newsboard']." : ".$event->newsTitle;
 			$eventsArray['start'] = $this->panelInit->unix_to_date($event->newsDate,'d-m-Y');
 		    $eventsArray['date'] = $this->panelInit->unix_to_date($event->newsDate);
-			$eventsArray['url'] = "#newsboard/".$event->id;
+			$eventsArray['url'] = "portal#newsboard/".$event->id;
 		    $eventsArray['backgroundColor'] = 'white';
 		    $eventsArray['textColor'] = '#000';
 		    $eventsArray['allDay'] = true;
@@ -1025,7 +1035,7 @@ class DashboardController extends Controller {
 				$eventsArray['start'] = $this->panelInit->unix_to_date($event->examDate,'d-m-Y');
 			    $eventsArray['date'] = $this->panelInit->unix_to_date($event->examDate);
 			    $eventsArray['backgroundColor'] = 'red';
-				$eventsArray['url'] = "#onlineExams";
+				$eventsArray['url'] = "portal#onlineExams";
 			    $eventsArray['textColor'] = '#000';
 			    $eventsArray['allDay'] = true;
 			    $toReturn[] = $eventsArray;
@@ -1040,7 +1050,7 @@ class DashboardController extends Controller {
 				$eventsArray['start'] = $this->panelInit->unix_to_date($date,'d-m-Y');
 				$eventsArray['date'] = $this->panelInit->unix_to_date($date);
 				$eventsArray['backgroundColor'] = 'maroon';
-				$eventsArray['url'] = "#calender";
+				$eventsArray['url'] = "portal#calender";
 				$eventsArray['textColor'] = '#fff';
 				$eventsArray['allDay'] = true;
 				$toReturn[] = $eventsArray;
@@ -1129,6 +1139,10 @@ class DashboardController extends Controller {
 
 	public function ml_upload(){
 		$image = \Input::file('file');
+
+		if(!$this->panelInit->validate_upload($image)){
+			return response()->json(['success' => false]);
+		}
 
 		$info = getimagesize( $image->getPathName() );
 		if($info === false) {

@@ -64,9 +64,9 @@
     <div class="col-12 listContent">
         <div class="card">
             <div class="card-block">
-                <button ng-if="userRole == 'admin' || userRole == 'account'" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addInvoice}}</button>
+                <button ng-show="$root.can('Invoices.addPayment')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addInvoice}}</button>
                 <button ng-click="toggleSearch()" class="btn pull-right btn-success card-block-input-item">{{phrase.advSearch}}</button>
-                <div ng-if="userRole == 'admin' || userRole == 'account'" class="pull-right card-block-input-group card-block-input-item">
+                <div ng-show="$root.can('Invoices.Export')" class="pull-right card-block-input-group card-block-input-item">
                     <div class="btn-group no-print">
                         <button type="button" class="btn btn-success btn-flat">{{phrase.Export}}</button>
                         <button type="button" class="btn btn-success btn-flat dropdown-toggle" data-toggle="dropdown">
@@ -91,10 +91,13 @@
                                 <th>{{phrase.student}}</th>
                                 <th style="width:160px;">{{phrase.Amount}} <br/> {{phrase.discoutedAmount}} <br/> {{phrase.paidAmount}}</th>
                                 <th>{{phrase.Status}}</th>
-                                <th ng-if="userRole == 'admin' || userRole == 'account'" style="width:160px;">{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('Invoices.collInvoice') || $root.can('Invoices.editPayment') || $root.can('Invoices.delPayment')" style="width:160px;">{{phrase.Operations}}</th>
                             </tr>
                             <tr dir-paginate="invoice in invoices | itemsPerPage:20" total-items="totalItems">
-                                <td><a class="ahref" ng-click="seeInvoice(invoice.id)">{{invoice.paymentTitle}}</a></td>
+                                <td>
+                                    <a ng-show="$root.can('Invoices.View')" class="ahref" ng-click="seeInvoice(invoice.id)">{{invoice.paymentTitle}}</a>
+                                    <span ng-show="!$root.can('Invoices.View')">{{invoice.paymentTitle}}</a>
+                                </td>
                                 <td>{{invoice.paymentDescription}}</td>
                                 <td>{{invoice.paymentDate}}<Br/>{{invoice.dueDate}}</td>
                                 <td>
@@ -107,10 +110,10 @@
                                     <span ng-show="invoice.paymentStatus == '0'" style='color:red;'>{{phrase.unpaid}}</span>
                                     <span ng-show="invoice.paymentStatus == '2'" style='color:red;'>{{phrase.ppaid}}</span>
                                 </td>
-                                <td>
-                                    <button ng-if="(userRole == 'admin' || userRole == 'account') && invoice.paymentStatus != '1'" ng-click="collect(invoice.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.collInvoice}}" tooltip><i class="fa fa-usd"></i></button>
-                                    <button ng-if="userRole == 'admin' || userRole == 'account'" ng-click="edit(invoice.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-if="userRole == 'admin' || userRole == 'account'" ng-click="remove(invoice,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('Invoices.collInvoice') || $root.can('Invoices.editPayment') || $root.can('Invoices.delPayment')">
+                                    <button ng-if="$root.can('Invoices.collInvoice') && invoice.paymentStatus != '1'" ng-click="collect(invoice.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.collInvoice}}" tooltip><i class="fa fa-usd"></i></button>
+                                    <button ng-if="$root.can('Invoices.editPayment')" ng-click="edit(invoice.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-if="$root.can('Invoices.delPayment')" ng-click="remove(invoice,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!invoices.length"><td class="noTableData" colspan="7">{{phrase.noPayments}}</td></tr>
@@ -489,7 +492,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-if="userRole == 'admin' || userRole == 'account'" ng-click="collect(invoice.payment.id)" class="btn pull-right btn-danger card-block-input-item no-print">{{phrase.collInvoice}}</button>
+                <button ng-if="$root.can('Invoices.collInvoice')" ng-click="collect(invoice.payment.id)" class="btn pull-right btn-danger card-block-input-item no-print">{{phrase.collInvoice}}</button>
                 <h4 class="card-title">{{phrase.viewInvoice}}</h4>
                 <div class="col-12">
 
@@ -500,14 +503,14 @@
                                 <th>{{phrase.Amount}}</th>
                                 <th>{{phrase.payMethod}}</th>
                                 <th>{{phrase.notes}}</th>
-                                <th class="no-print" ng-if="userRole == 'admin' || userRole == 'account'">{{phrase.payRevert}}</th>
+                                <th class="no-print" ng-if="$root.can('Invoices.payRevert')">{{phrase.payRevert}}</th>
                             </tr>
                             <tr ng-repeat="collection in invoice.collection">
                                 <td>{{collection.collectionDate}}</td>
                                 <td>{{invoice.currency_symbol}} {{collection.collectionAmount}}</td>
                                 <td>{{collection.collectionMethod}}</td>
                                 <td>{{collection.collectionNote}}</td>
-                                <td class="no-print" ng-if="userRole == 'admin' || userRole == 'account'">
+                                <td class="no-print" ng-if="$root.can('Invoices.payRevert')">
                                     <button ng-click="revert(collection.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.payRevert}}" tooltip><i class="fa fa-undo"></i></button>
                                 </td>
                             </tr>

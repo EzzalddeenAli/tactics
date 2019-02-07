@@ -49,21 +49,21 @@
                   <li class="list-inline-item"><a href="#"><i class="fa fa-envelope"></i></a></li>
                 </ul>
                 <div class="login">
-                	<a href="<?php echo \URL::to('/login'); ?>" class="login-btn"><i class="fa fa-sign-in"></i><span class="d-none d-md-inline-block"><?php echo $template_vars['language']['signIn']; ?></span></a>
-                	<a href="<?php echo \URL::to('/register'); ?>" class="signup-btn"><i class="fa fa-user"></i><span class="d-none d-md-inline-block"><?php echo $template_vars['language']['signUp']; ?></span></a>
+                  <a href="<?php echo \URL::to('/login'); ?>" class="login-btn"><i class="fa fa-sign-in"></i><span class="d-none d-md-inline-block"><?php echo $template_vars['language']['signIn']; ?></span></a>
+                  <a href="<?php echo \URL::to('/register'); ?>" class="signup-btn"><i class="fa fa-user"></i><span class="d-none d-md-inline-block"><?php echo $template_vars['language']['signUp']; ?></span></a>
                 </div>
                 <ul class="social-custom list-inline">
-                	<?php if(isset($template_vars['social_facebook']) AND $template_vars['social_facebook'] != ""){ ?>
-	                	<li class="list-inline-item"><a href="<?php echo $template_vars['social_facebook']; ?>" target="_BLANK"><i class="fa fa-facebook"></i></a></li>
-                  	<?php } ?>
+                  <?php if(isset($template_vars['social_facebook']) AND $template_vars['social_facebook'] != ""){ ?>
+                    <li class="list-inline-item"><a href="<?php echo $template_vars['social_facebook']; ?>" target="_BLANK"><i class="fa fa-facebook"></i></a></li>
+                    <?php } ?>
                 
-                	<?php if(isset($template_vars['social_google']) AND $template_vars['social_google'] != ""){ ?>
-                  		<li class="list-inline-item"><a href="<?php echo $template_vars['social_google']; ?>" target="_BLANK"><i class="fa fa-google-plus"></i></a></li>
-                  	<?php } ?>
+                  <?php if(isset($template_vars['social_google']) AND $template_vars['social_google'] != ""){ ?>
+                      <li class="list-inline-item"><a href="<?php echo $template_vars['social_google']; ?>" target="_BLANK"><i class="fa fa-google-plus"></i></a></li>
+                    <?php } ?>
                 
-                  	<?php if(isset($template_vars['social_twitter']) AND $template_vars['social_twitter'] != ""){ ?>
-                  		<li class="list-inline-item"><a href="<?php echo $template_vars['social_twitter']; ?>" target="_BLANK"><i class="fa fa-twitter"></i></a></li>
-                  	<?php } ?>
+                    <?php if(isset($template_vars['social_twitter']) AND $template_vars['social_twitter'] != ""){ ?>
+                      <li class="list-inline-item"><a href="<?php echo $template_vars['social_twitter']; ?>" target="_BLANK"><i class="fa fa-twitter"></i></a></li>
+                    <?php } ?>
                 
                 </ul>
               </div>
@@ -76,14 +76,14 @@
       <header class="nav-holder make-sticky">
         <div id="navbar" role="navigation" class="navbar navbar-expand-lg">
           <div class="container"><a href="index.html" class="navbar-brand home">
-          	<?php echo $template_vars['site_title']; ?>
+            <?php echo $template_vars['site_title']; ?>
           </a>
             <button type="button" data-toggle="collapse" data-target="#navigation" class="navbar-toggler btn-template-outlined"><span class="sr-only"><?php echo $template_vars['language']['toggleDropdown']; ?></span><i class="fa fa-align-justify"></i></button>
             <div id="navigation" class="navbar-collapse collapse">
               <ul class="nav navbar-nav ml-auto">
-              	<?php foreach ($navbar_links as $value) { ?>
-                	<li class="nav-item <?php if($value['page_permalink'] == $permalink['page_permalink']){ echo 'active'; } ?>"><a href="<?php echo \URL::to($value['page_permalink']); ?>"> <?php echo $value['page_title']; ?> </a></li>
-              	<?php } ?>
+                <?php foreach ($navbar_links as $value) { ?>
+                  <li class="nav-item <?php if($value['page_permalink'] == $permalink['page_permalink']){ echo 'active'; } ?>"><a href="<?php echo \URL::to($value['page_permalink']); ?>"> <?php echo $value['page_title']; ?> </a></li>
+                <?php } ?>
               </ul>
             </div>
           </div>
@@ -124,23 +124,23 @@
         </div>
       <?php else: ?>
 
-	      <div id="heading-breadcrumbs">
-	        <div class="container">
-	          <div class="row d-flex align-items-center flex-wrap">
-	            <div class="col-md-7">
-	              <h1 class="h2"><?php echo $template_vars['page_title']; ?></h1>
-	            </div>
-	            <div class="col-md-5">
-	              <ul class="breadcrumb d-flex justify-content-end">
-	                <li class="breadcrumb-item"><a href="<?php echo \URL::to('/'); ?>"><?php echo $template_vars['site_title']; ?></a></li>
-	                <li class="breadcrumb-item active"><?php echo $template_vars['page_title']; ?></li>
-	              </ul>
-	            </div>
-	          </div>
-	        </div>
-	      </div>
+        <div id="heading-breadcrumbs">
+          <div class="container">
+            <div class="row d-flex align-items-center flex-wrap">
+              <div class="col-md-7">
+                <h1 class="h2"><?php echo $template_vars['page_title']; ?></h1>
+              </div>
+              <div class="col-md-5">
+                <ul class="breadcrumb d-flex justify-content-end">
+                  <li class="breadcrumb-item"><a href="<?php echo \URL::to('/'); ?>"><?php echo $template_vars['site_title']; ?></a></li>
+                  <li class="breadcrumb-item active"><?php echo $template_vars['page_title']; ?></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
 
-  	  <?php endif; ?>
+      <?php endif; ?>
       
       <?php echo $template_inner_content; ?>
 
@@ -151,13 +151,13 @@
             <div class="col-lg-4">
               <h4 class="h6">Latest News</h4>
               <ul class="list-unstyled footer-blog-list">
-              	<?php foreach ($template_vars['footer_news_list'] as $value) { ?>
-	              	<li class="d-flex align-items-center">
-	                  <div class="image"><img src="<?php echo \URL::asset('uploads/news/'.$value['newsImage']); ?>" alt="..." class="img-fluid"></div>
-	                  <div class="text">
-	                    <h5 class="mb-0"> <a href="post.html"><?php echo $value['newsTitle']; ?></a></h5>
-	                  </div>
-	                </li>
+                <?php foreach ($template_vars['footer_news_list'] as $value) { ?>
+                  <li class="d-flex align-items-center">
+                    <div class="image"><img src="<?php echo \URL::asset('uploads/news/'.$value['newsImage']); ?>" alt="..." class="img-fluid"></div>
+                    <div class="text">
+                      <h5 class="mb-0"> <a href="post.html"><?php echo $value['newsTitle']; ?></a></h5>
+                    </div>
+                  </li>
                 <?php } ?>
               </ul>
               <hr class="d-block d-lg-none">
@@ -165,21 +165,21 @@
             <div class="col-lg-4">
               <h4 class="h6">Links</h4>
               <div class="row">
-              	<?php reset($navbar_links); foreach ($navbar_links as $value) { ?>
-	              	<div class="col-sm-6">
-	              		<a style="font-size:12px;padding: 5px;" href="<?php echo \URL::to($value['page_permalink']); ?>"> <?php echo $value['page_title']; ?> </a>
-	              	</div>
-              	<?php } ?>
+                <?php reset($navbar_links); foreach ($navbar_links as $value) { ?>
+                  <div class="col-sm-6">
+                    <a style="font-size:12px;padding: 5px;" href="<?php echo \URL::to($value['page_permalink']); ?>"> <?php echo $value['page_title']; ?> </a>
+                  </div>
+                <?php } ?>
               </div>
             </div>
             <div class="col-lg-4">
               <h4 class="h6">Contact</h4>
               <p class="text-uppercase">
-              	<strong><?php echo $template_vars['site_title']; ?> </strong>
-              	<br><?php echo $template_vars['address_line_1']; ?> 
-              	<br><?php echo $template_vars['address_line_2']; ?> 
-              	<br><i class="fa fa-phone"></i> <?php echo $template_vars['phone_number']; ?> 
-              	<br/><i class="fa fa-envelope"></i> <?php echo $template_vars['mail_address']; ?>
+                <strong><?php echo $template_vars['site_title']; ?> </strong>
+                <br><?php echo $template_vars['address_line_1']; ?> 
+                <br><?php echo $template_vars['address_line_2']; ?> 
+                <br><i class="fa fa-phone"></i> <?php echo $template_vars['phone_number']; ?> 
+                <br/><i class="fa fa-envelope"></i> <?php echo $template_vars['mail_address']; ?>
               <hr class="d-block d-lg-none">
             </div>
           </div>
@@ -191,7 +191,7 @@
                 <p><?php echo $template_vars['cms_footer_left']; ?></p>
               </div>
               <div class="col-lg-8 text-right text-center-md">
-              	<?php echo $template_vars['cms_footer_right']; ?>
+                <?php echo $template_vars['cms_footer_right']; ?>
               </div>
             </div>
           </div>

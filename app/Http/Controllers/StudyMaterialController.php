@@ -8,7 +8,7 @@ class StudyMaterialController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,15 +21,23 @@ class StudyMaterialController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('studyMaterial')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("studyMaterial.list","studyMaterial.addMaterial","studyMaterial.editMaterial","studyMaterial.delMaterial","studyMaterial.Download") )){
+			exit;
+		}
+
 		$toReturn = array();
-		$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get()->toArray();
+
+		if($this->data['users']->role == "teacher"){
+			$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->where('classTeacher','LIKE','%"'.$this->data['users']->id.'"%')->get()->toArray();
+		}else{
+			$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get()->toArray();
+		}
+
 		$classesArray = array();
 
 		foreach($toReturn['classes'] as $class){
@@ -90,7 +98,11 @@ class StudyMaterialController extends Controller {
 	}
 
 	public function delete($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "studyMaterial.delMaterial" )){
+			exit;
+		}
+
 		if ( $postDelete = \study_material::where('id', $id)->first() )
         {
 			@unlink('uploads/studyMaterial/'.$postDelete->material_file);
@@ -102,7 +114,11 @@ class StudyMaterialController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "studyMaterial.addMaterial" )){
+			exit;
+		}
+
 		$studyMaterial = new \study_material();
 		$studyMaterial->class_id = json_encode(\Input::get('class_id'));
 		if($this->panelInit->settingsArray['enableSections'] == true){
@@ -115,6 +131,11 @@ class StudyMaterialController extends Controller {
 		$studyMaterial->save();
 		if (\Input::hasFile('material_file')) {
 			$fileInstance = \Input::file('material_file');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addMaterial'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = "material_".uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/studyMaterial/',$newFileName);
 
@@ -144,6 +165,11 @@ class StudyMaterialController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "studyMaterial.editMaterial" )){
+			exit;
+		}
+
 		$studyMaterial = \study_material::where('id',$id)->first()->toArray();
 		$DashboardController = new DashboardController();
 		$studyMaterial['sections'] = $DashboardController->sectionsList(json_decode($studyMaterial['class_id'],true));
@@ -153,6 +179,12 @@ class StudyMaterialController extends Controller {
 	}
 
 	public function download($id){
+
+		if(!$this->panelInit->can( "studyMaterial.Download" )){
+			exit;
+		}
+		
+
 		$toReturn = \study_material::where('id',$id)->first();
 		if(file_exists('uploads/studyMaterial/'.$toReturn->material_file)){
 			$fileName = preg_replace('/[^a-zA-Z0-9-_\.]/','',$toReturn->material_title). "." .pathinfo($toReturn->material_file, PATHINFO_EXTENSION);
@@ -166,7 +198,11 @@ class StudyMaterialController extends Controller {
 	}
 
 	function edit($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "studyMaterial.editMaterial" )){
+			exit;
+		}
+		
 		$studyMaterial = \study_material::find($id);
 		$studyMaterial->class_id = json_encode(\Input::get('class_id'));
 		if($this->panelInit->settingsArray['enableSections'] == true){
@@ -176,8 +212,13 @@ class StudyMaterialController extends Controller {
 		$studyMaterial->material_title = \Input::get('material_title');
 		$studyMaterial->material_description = \Input::get('material_description');
 		if (\Input::hasFile('material_file')) {
-			@unlink("uploads/studyMaterial/".$studyMaterial->material_file);
 			$fileInstance = \Input::file('material_file');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editMaterial'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			@unlink("uploads/studyMaterial/".$studyMaterial->material_file);
+			
 			$newFileName = "material_".uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/studyMaterial/',$newFileName);
 

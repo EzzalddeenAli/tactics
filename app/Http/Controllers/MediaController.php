@@ -10,7 +10,7 @@ class MediaController extends Controller {
 	var $height = "260";
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -24,18 +24,24 @@ class MediaController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('mediaCenter')){
-			exit;
-		}
 	}
 
 	public function listAlbum()
 	{
+
+		if(!$this->panelInit->can( array("mediaCenter.View","mediaCenter.addAlbum","mediaCenter.editAlbum","mediaCenter.delAlbum","mediaCenter.addMedia","mediaCenter.editMedia","mediaCenter.delMedia") )){
+			exit;
+		}
+
 		return $this->listAlbumById();
 	}
 
 	public function listAlbumById($dir = 0)
 	{
+
+		if(!$this->panelInit->can( array("mediaCenter.View","mediaCenter.addAlbum","mediaCenter.editAlbum","mediaCenter.delAlbum","mediaCenter.addMedia","mediaCenter.editMedia","mediaCenter.delMedia") )){
+			exit;
+		}
 
 		$toReturn = array();
 		if($dir != 0){
@@ -63,7 +69,11 @@ class MediaController extends Controller {
 	}
 
 	public function newAlbum(){
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "teacher") exit;
+
+		if(!$this->panelInit->can( "mediaCenter.addAlbum" )){
+			exit;
+		}
+
 		$newFileName = "";
 
 		if (\Input::hasFile('albumImage')) {
@@ -102,7 +112,11 @@ class MediaController extends Controller {
 	}
 
 	public function deleteAlbum($id){
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "teacher") exit;
+
+		if(!$this->panelInit->can( "mediaCenter.delAlbum" )){
+			exit;
+		}
+
 		if ( $postDelete = \media_albums::where('id', $id)->first() )
         {
 			$mediaItems = \media_items::where('albumId',$id)->get();
@@ -129,11 +143,20 @@ class MediaController extends Controller {
 	}
 
 	public function fetchAlbum($id){
+
+		if(!$this->panelInit->can( array("mediaCenter.editAlbum","mediaCenter.View") )){
+			exit;
+		}
+
 		return \media_albums::where('id',$id)->first();
 	}
 
 	public function editAlbum($id){
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "teacher") exit;
+
+		if(!$this->panelInit->can( "mediaCenter.editAlbum" )){
+			exit;
+		}
+
 		$album = \media_albums::where('id',$id)->first();
 
 		$album->albumTitle = \Input::get('albumTitle');
@@ -162,7 +185,11 @@ class MediaController extends Controller {
 	}
 
 	public function delete($id){
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "teacher") exit;
+
+		if(!$this->panelInit->can( "mediaCenter.delMedia" )){
+			exit;
+		}
+
 		if ( $postDelete = \media_items::where('id', $id)->first() )
         {
 			@unlink('uploads/media/'.$postDelete->mediaURL);
@@ -177,7 +204,11 @@ class MediaController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "teacher") exit;
+
+		if(!$this->panelInit->can( "mediaCenter.addMedia" )){
+			exit;
+		}
+		
 		$newFileName = "";
 
 		$mediaItems = new \media_items();
@@ -221,11 +252,20 @@ class MediaController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( array("mediaCenter.editMedia","mediaCenter.View") )){
+			exit;
+		}
+
 		return \media_items::where('id',$id)->first();
 	}
 
 	function edit($id){
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "teacher") exit;
+
+		if(!$this->panelInit->can( "mediaCenter.editMedia" )){
+			exit;
+		}
+
 		$mediaItems = \media_items::where('id',$id)->first();
 		$mediaItems->albumId = \Input::get('albumId');
 

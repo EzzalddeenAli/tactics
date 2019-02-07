@@ -11,17 +11,17 @@
     <div class="col-md-3 no-print">
         <div class="card">
             <div class="card-block">
-                <div class="list-group">
+                <div class="list-group" tabheads>
 
-                    <a showtab="" class="list-group-item active" href="#global" aria-controls="global" role="tab" data-toggle="tab">{{phrase.globalSettings}}</a>
-                    <a showtab="" class="list-group-item" href="#modules" aria-controls="modules" role="tab" data-toggle="tab">{{phrase.activatedModules}}</a>
-                    <a showtab="" class="list-group-item" href="#payments" aria-controls="payments" role="tab" data-toggle="tab">{{phrase.paymentsSettings}}</a>
-                    <a showtab="" class="list-group-item" href="#sms" aria-controls="sms" role="tab" data-toggle="tab">{{phrase.mailSmsSettings}}</a>
-                    <a showtab="" class="list-group-item" href="#vacation" aria-controls="vacation" role="tab" data-toggle="tab">{{phrase.vacationSettings}}</a>
-                    <a showtab="" class="list-group-item" href="#mobile" aria-controls="mobile" role="tab" data-toggle="tab">{{phrase.mobileSettings}}</a>
-                    <a showtab="" class="list-group-item" href="#cms" aria-controls="cms" role="tab" data-toggle="tab">{{phrase.frontendCMS}}</a>
-                    <a showtab="" class="list-group-item" href="#biometric" aria-controls="biometric" role="tab" data-toggle="tab">{{phrase.bioItegration}}</a>
-                    <a showtab="" class="list-group-item" href="#lookFeel" aria-controls="lookFeel" role="tab" data-toggle="tab">{{phrase.lookFeel}}</a>
+                    <a ng-show="$root.can('adminTasks.globalSettings')" showtab="" class="list-group-item" href="#global" aria-controls="global" role="tab" data-toggle="tab">{{phrase.globalSettings}}</a>
+                    <a ng-show="$root.can('adminTasks.activatedModules')" showtab="" class="list-group-item" href="#modules" aria-controls="modules" role="tab" data-toggle="tab">{{phrase.activatedModules}}</a>
+                    <a ng-show="$root.can('adminTasks.paymentsSettings')" showtab="" class="list-group-item" href="#payments" aria-controls="payments" role="tab" data-toggle="tab">{{phrase.paymentsSettings}}</a>
+                    <a ng-show="$root.can('adminTasks.mailSmsSettings')" showtab="" class="list-group-item" href="#sms" aria-controls="sms" role="tab" data-toggle="tab">{{phrase.mailSmsSettings}}</a>
+                    <a ng-show="$root.can('adminTasks.vacationSettings')" showtab="" class="list-group-item" href="#vacation" aria-controls="vacation" role="tab" data-toggle="tab">{{phrase.vacationSettings}}</a>
+                    <a ng-show="$root.can('adminTasks.mobileSettings')" showtab="" class="list-group-item" href="#mobile" aria-controls="mobile" role="tab" data-toggle="tab">{{phrase.mobileSettings}}</a>
+                    <a ng-show="$root.can('adminTasks.frontendCMS')" showtab="" class="list-group-item" href="#cms" aria-controls="cms" role="tab" data-toggle="tab">{{phrase.frontendCMS}}</a>
+                    <a ng-show="$root.can('adminTasks.bioItegration')" showtab="" class="list-group-item" href="#biometric" aria-controls="biometric" role="tab" data-toggle="tab">{{phrase.bioItegration}}</a>
+                    <a ng-show="$root.can('adminTasks.lookFeel')" showtab="" class="list-group-item" href="#lookFeel" aria-controls="lookFeel" role="tab" data-toggle="tab">{{phrase.lookFeel}}</a>
 
                 </div>
             </div>
@@ -32,8 +32,8 @@
             <div class="card-block">
 
                 <form class="form-horizontal" name="editTerms" role="form" ng-submit="saveEdit()" novalidate>
-                    <div class="tab-content">
-                        <div role="tabpanel" class="tab-pane active" id="global">
+                    <div class="tab-content" tabcontent>
+                        <div role="tabpanel" class="tab-pane" id="global" ng-show="$root.can('adminTasks.globalSettings')">
                             <h3>{{phrase.globalSettings}}</h3>
                             <br/>
                             <div class="form-group row" ng-class="{'has-error': editSettings.siteTitle.$invalid}">
@@ -103,6 +103,23 @@
                                 <label class="col-sm-3 text-right control-label col-form-label">{{phrase.footer}}</label>
                                 <div class="col-sm-9">
                                     <input type="text" name="footer" ng-model="form.footer" class="form-control" placeholder="{{phrase.footer}}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label class="col-sm-3 text-right control-label col-form-label">Enable In/Out for employees attendance</label>
+                                <div class="col-sm-9">
+                                    <div class="radio-list">
+                                        <label>
+                                            <input type="radio" name="sAttendanceInOut" value="1" ng-model="form.sAttendanceInOut" required ng-checked='true'>
+                                            Enabled
+                                        </label>
+                                    </div>
+                                    <div class="radio-list">
+                                        <label>
+                                            <input type="radio" name="sAttendanceModel" value="0" ng-model="form.sAttendanceInOut" required >
+                                            Disabled
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -279,9 +296,9 @@
                                     </div>
                                 </div>
                             </div>
-
+                        
                         </div>
-                        <div role="tabpanel" class="tab-pane" id="modules">
+                        <div role="tabpanel" class="tab-pane" id="modules" ng-show="$root.can('adminTasks.activatedModules')">
                             <h3>{{phrase.activatedModules}}</h3>
                             <br/>
                             
@@ -294,6 +311,7 @@
                                     <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="sendNotifAct"> {{phrase.mobileNotifications}}</label>
                                     <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="calendarAct"> {{phrase.Calender}}</label>
                                     <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="eventsAct"> {{phrase.events}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="newsboardAct"> {{phrase.newsboard}}</label>
                                     <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="vacationAct"> {{phrase.Vacation}}</label>
                                     <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="attendanceAct"> {{phrase.Attendance}}</label>
                                     <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="staffAttendanceAct"> {{phrase.staffAttendance}}</label>
@@ -312,12 +330,21 @@
                                     <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="materialsAct"> {{phrase.studyMaterial}}</label>
                                     <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="classSchAct"> {{phrase.classSch}}</label>
                                     <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="hostelAct"> {{phrase.HostelManage}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="visitorsAct"> {{phrase.visitors}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="phoneCallsAct"> {{phrase.phn_calls}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="postalAct"> {{phrase.postal}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="conMessAct"> {{phrase.con_mess}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="enquiriesAct"> {{phrase.enquiries}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="complainAct"> {{phrase.complaints}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="employeesAct"> {{phrase.employees}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="inventoryAct"> {{phrase.inventory}}</label>
+                                    <label class="col-md-12" style="padding: 10px;"><input type="checkbox" name="activatedModules[]" checklist-model="form.activatedModules" value="certAct"> {{phrase.Certificates}}</label>
                                 </div>
                             </div>
                             
 
                         </div>
-                        <div role="tabpanel" class="tab-pane" id="sms">
+                        <div role="tabpanel" class="tab-pane" id="sms" ng-show="$root.can('adminTasks.mailSmsSettings')">
                             <h3>{{phrase.mailSmsSettings}}</h3>
                             <br/>
 
@@ -443,6 +470,12 @@
                                                 <input type="text" name="nexmoApiSecret" ng-model="formS.nexmoApiSecret" class="form-control" placeholder="Nexmo Api Secret">
                                             </div>
                                         </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-3 text-right control-label col-form-label">Nexmo From ID * </label>
+                                            <div class="col-sm-9">
+                                                <input type="text" name="nexmoFromId" ng-model="formS.nexmoFromId" class="form-control" placeholder="Nexmo From ID">
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div ng-show="formS.smsProvider == 'twilio'">
@@ -503,18 +536,6 @@
                                     </div>
 
                                     <div ng-show="formS.smsProvider == 'clickatell'">
-                                        <div class="form-group row">
-                                            <label class="col-sm-3 text-right control-label col-form-label">Clickatell Username * </label>
-                                            <div class="col-sm-9">
-                                                <input type="text" name="clickatellUserName" ng-model="formS.clickatellUserName" class="form-control" placeholder="Clickatell Username">
-                                            </div>
-                                        </div>
-                                        <div class="form-group row">
-                                            <label class="col-sm-3 text-right control-label col-form-label">Clickatell Password * </label>
-                                            <div class="col-sm-9">
-                                                <input type="text" name="clickatellPassword" ng-model="formS.clickatellPassword" class="form-control" placeholder="Clickatell Password">
-                                            </div>
-                                        </div>
                                         <div class="form-group row">
                                             <label class="col-sm-3 text-right control-label col-form-label">Clickatell Api Key * </label>
                                             <div class="col-sm-9">
@@ -726,7 +747,7 @@
                             </div>
 
                         </div>
-                        <div role="tabpanel" class="tab-pane" id="payments">
+                        <div role="tabpanel" class="tab-pane" id="payments" ng-show="$root.can('adminTasks.paymentsSettings')">
                             <h3>{{phrase.paymentsSettings}}</h3>
                             <br/>
                             <div class="form-group row" ng-class="{'has-error': editSettings.currency_code.$invalid}">
@@ -841,7 +862,7 @@
                             </div>
                         </div>
 
-                        <div role="tabpanel" class="tab-pane" id="vacation">
+                        <div role="tabpanel" class="tab-pane" id="vacation" ng-show="$root.can('adminTasks.vacationSettings')">
                             <h3>{{phrase.vacationSettings}}</h3>
                             <br/>
                             <div class="form-group row">
@@ -877,13 +898,13 @@
                                     </div>
                                     <br/><Br/>
                                     <ul>
-                                        <li ng-repeat="date in form.officialVacationDay">{{date}} - <a ng-click="removeVacationDay(date,$index)">{{phrase.Remove}}</a></li>
+                                        <li ng-repeat="date in form.officialVacationDay track by $index">{{date}} - <a ng-click="removeVacationDay(date,$index)">{{phrase.Remove}}</a></li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
 
-                        <div role="tabpanel" class="tab-pane" id="cms">
+                        <div role="tabpanel" class="tab-pane" id="cms" ng-show="$root.can('adminTasks.frontendCMS')">
                             <h3>{{phrase.frontendCMS}}</h3>
                             <br/>
                             <div class="form-group row">
@@ -949,13 +970,14 @@
                                 <div class="col-sm-9">
                                     <div class="radio-list">
                                         <input type="text" name="cms_template" ng-model="form.cms_template" class="form-control" placeholder="CMS Active Template">
+                                        <small>Current available templates are : <b>default</b> - <b>modern</b></small>
                                     </div>
                                 </div>
                             </div>
 
                         </div>
 
-                        <div role="tabpanel" class="tab-pane" id="mobile">
+                        <div role="tabpanel" class="tab-pane" id="mobile" ng-show="$root.can('adminTasks.mobileSettings')">
                             <h3>{{phrase.mobileSettings}}</h3>
                             <br/>
                             <div class="form-group row">
@@ -982,7 +1004,7 @@
 
                         </div>
 
-                        <div role="tabpanel" class="tab-pane" id="biometric">
+                        <div role="tabpanel" class="tab-pane" id="biometric" ng-show="$root.can('adminTasks.bioItegration')">
                             <h3>{{phrase.bioItegration}}</h3>
                             <br/>
                             <div class="form-group row">
@@ -1017,7 +1039,7 @@
                             </div>
                         </div>
 
-                        <div role="tabpanel" class="tab-pane" id="lookFeel">
+                        <div role="tabpanel" class="tab-pane" id="lookFeel" ng-show="$root.can('adminTasks.lookFeel')">
                             <h3>{{phrase.lookFeel}}</h3>
                             <br/>
                             <div class="form-group row">
@@ -1042,8 +1064,8 @@
                                             {{phrase.Image}} - ( 200 x 60 px )
                                             <br/>
                                             <small>
-                                                Light Theme : assets/images/dark-logo.png <br/>
-                                                Light Theme : assets/images/light-logo.png
+                                                Light Theme : assets/images/logo-dark.png <br/>
+                                                Light Theme : assets/images/logo-light.png
                                             </small>
                                         </label>
                                     </div>

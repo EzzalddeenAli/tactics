@@ -8,7 +8,7 @@ class StudentsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,13 +22,13 @@ class StudentsController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('students')){
-			exit;
-		}
 	}
 
 	function waitingApproval(){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "students.Approve" )){
+			exit;
+		}
 
 		if($this->data['users']->role == "teacher"){
 			$classesList = array();
@@ -72,7 +72,10 @@ class StudentsController extends Controller {
 	}
 
 	function gradStdList(){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent" || $this->data['users']->role == "teacher") exit;
+
+		if(!$this->panelInit->can( "students.listGradStd" )){
+			exit;
+		}
 
 		$students = \User::where('role','student')->where('studentClass','-1')->orderByRaw("studentRollId + 0 ASC")->get()->toArray();
 
@@ -85,7 +88,11 @@ class StudentsController extends Controller {
 	}
 
 	function approveOne($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "students.Approve" )){
+			exit;
+		}
+
 		$user = \User::find($id);
 		$user->activated = 1;
 		$user->save();
@@ -95,7 +102,10 @@ class StudentsController extends Controller {
 
 	public function listAll($page = 1)
 	{
-		if($this->data['users']->role == "student") exit;
+
+		if(!$this->panelInit->can( array("students.list","students.editStudent","students.delStudent","students.listGradStd","students.Approve","students.stdLeaderBoard","students.Import","students.Export","students.Attendance","students.Marksheet","students.medHistory") )){
+			exit;
+		}
 
 		$toReturn = array();
 		if($this->data['users']->role == "parent" ){
@@ -155,6 +165,11 @@ class StudentsController extends Controller {
 					$students = $students->whereIn('studentSection',$searchInput['section']);
 				}
 
+				if(isset($searchInput['student_categories']) AND $searchInput['student_categories'] != "" ){
+					$students = $students->whereIn('std_category',$searchInput['student_categories']);
+				}
+				
+
 			}
 
 		}
@@ -189,7 +204,28 @@ class StudentsController extends Controller {
 			$classesIds[] = $value['id'];
 			$classArray[$value['id']] = $value['className'];
 		}
-		$toReturn['transports'] =  \transportation::get()->toArray();
+
+		$transport_vehicles = array();
+		$transport_vehicles_ =  \transport_vehicles::get()->toArray();
+		foreach ($transport_vehicles_ as $key => $value) {
+			$transport_vehicles[$value['id']] = $value['plate_number'] . " ( " .$value['driver_name'] ." )";
+		}
+		
+		$toReturn['transports'] = array();
+		$toReturn['transport_vehicles'] = array();
+		$transports =  \transportation::get()->toArray();
+		foreach ($transports as $key => $value) {
+			$value['vehicles_list'] = json_decode($value['vehicles_list'],true);
+			$toReturn['transports'][$value['id']] = $value;
+			$toReturn['transports'][$value['id']]['vehicles'] = array();
+			if(is_array($value['vehicles_list'])){
+				foreach ($value['vehicles_list'] as $key_ => $value_) {
+					if(isset($transport_vehicles[ $value_ ])){
+						$toReturn['transports'][$value['id']]['vehicles'][ $value_ ] = $transport_vehicles[ $value_ ];					
+					}
+				}				
+			}
+		}
 
 		$sectionArray = array();
 		if(count($classesIds) > 0){
@@ -218,14 +254,21 @@ class StudentsController extends Controller {
 
 		$toReturn['students'] = array();
 		foreach($students as $student){
-			$toReturn['students'][] = array('id'=>$student['id'],"studentRollId"=>$student['studentRollId'],"fullName"=>$student['fullName'],"username"=>$student['username'],"email"=>$student['email'],"isLeaderBoard"=>$student['isLeaderBoard'],"studentClass"=>isset($classArray[$student['studentClass']]) ? $classArray[$student['studentClass']] : "","studentSection"=>isset($sectionArray[$student['studentSection']]) ? $sectionArray[$student['studentSection']] : "");
+			$toReturn['students'][] = array('id'=>$student['id'],"studentRollId"=>$student['studentRollId'],"account_active"=>$student['account_active'],"fullName"=>$student['fullName'],"username"=>$student['username'],"email"=>$student['email'],"isLeaderBoard"=>$student['isLeaderBoard'],"studentClass"=>isset($classArray[$student['studentClass']]) ? $classArray[$student['studentClass']] : "","studentSection"=>isset($sectionArray[$student['studentSection']]) ? $sectionArray[$student['studentSection']] : "");
 		}
 
+		$toReturn['roles'] = \roles::select('id','role_title')->get();
+		$toReturn['student_categories'] = \student_categories::select('id','cat_title')->get();
+		
 		return $toReturn;
 	}
 
 	public function delete($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.delStudent" )){
+			exit;
+		}
+
 		if ( $postDelete = \User::where('role','student')->where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -236,7 +279,11 @@ class StudentsController extends Controller {
 	}
 
 	function account_status($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.editStudent" )){
+			exit;
+		}
+
 		$user = \User::where('role','student')->where('id',$id)->first();
 
 		if($user->account_active == "1"){
@@ -251,7 +298,11 @@ class StudentsController extends Controller {
 	}
 
 	public function acYearRemove($student,$id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.editStudent" )){
+			exit;
+		}
+
 		if ( $postDelete = \student_academic_years::where('studentId',$student)->where('academicYearId', $id)->first() )
         {
             $postDelete->delete();
@@ -262,7 +313,11 @@ class StudentsController extends Controller {
 	}
 
 	public function export(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.Export" )){
+			exit;
+		}
+
 		$classArray = array();
 		$classes = \classes::get();
 		foreach ($classes as $class) {
@@ -303,7 +358,11 @@ class StudentsController extends Controller {
 	}
 
 	public function exportpdf(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.Export" )){
+			exit;
+		}
+
 		$classArray = array();
 		$classes = \classes::get();
 		foreach ($classes as $class) {
@@ -352,20 +411,27 @@ class StudentsController extends Controller {
 	}
 
 	public function import($type){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.Import" )){
+			exit;
+		}
 
 		if (\Input::hasFile('excelcsv')) {
 
 			$classArray = array();
-			$classes = \classes::get();
+			$classArray_id = array();
+			$classes = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get();
 			foreach ($classes as $class) {
 				$classArray[$class->className] = $class->id;
+				$classArray_id[$class->id] = $class->className;
 			}
 
 			$sectionsArray = array();
 			$sections = \sections::get();
 			foreach ($sections as $section) {
-				$sectionsArray[$section->classId][$section->id] = $section->sectionName." - ".$section->sectionTitle;
+				if(isset( $classArray_id[$section->classId] )){
+					$sectionsArray[$section->classId][$section->id] = $section->sectionName." - ".$section->sectionTitle;					
+				}
 			}
 
 			if ( $_FILES['excelcsv']['tmp_name'] )
@@ -373,7 +439,7 @@ class StudentsController extends Controller {
 				$readExcel = \Excel::load($_FILES['excelcsv']['tmp_name'], function($reader) { })->get();
 
 				$dataImport = array("ready"=>array(),"revise"=>array());
-
+				
 				foreach ($readExcel as $row)
 				{
 					$importItem = array();
@@ -417,8 +483,16 @@ class StudentsController extends Controller {
 					if(isset($row['class']) AND $row['class'] != null){
 						$importItem['class'] = $row['class'];
 						$importItem['studentClass'] = (isset($classArray[$row['class']]))?$classArray[$row['class']]:'';
+
+						if($importItem['studentClass'] == ""){
+							$importItem['error'][] = "class";
+						}
+
+					}else{
+						$importItem['error'][] = "class";
 					}
-					if(isset($row['section']) AND $row['section'] != null){
+
+					if($this->panelInit->settingsArray['enableSections'] == true AND isset($row['section']) AND $row['section'] != null){
 						$importItem['section'] = $row['section'];
 						if($importItem['studentClass'] != ''){
 							$sectionDb = \sections::where('classId',$importItem['studentClass'])->where('sectionName',$row['section'])->select('id');
@@ -432,13 +506,13 @@ class StudentsController extends Controller {
 							$importItem['studentSection'] = '';
 						}
 					}
-					if(isset($row['password']) AND $row['password'] != null){
-						$importItem['password'] = $row['password'];
+					if($this->panelInit->settingsArray['enableSections'] == true AND ( !isset($importItem['studentSection']) || $importItem['studentSection'] == "" ) ){
+						$importItem['error'][] = "section";
 					}
 
-					if(!isset($importItem['class']) || !isset($importItem['studentClass'])){
-						$importItem['error'][] = "class";
-					}
+					if(isset($row['password']) AND $row['password'] != null){
+						$importItem['password'] = $row['password'];
+					}					
 
 					$checkUser = \User::where('username',$importItem['username'])->orWhere('email',$importItem['email']);
 					if($checkUser->count() > 0){
@@ -450,6 +524,9 @@ class StudentsController extends Controller {
 							$importItem['error'][] = "email";
 						}
 
+					}
+
+					if(isset($importItem['error']) && count($importItem['error']) > 0){
 						$dataImport['revise'][] = $importItem;
 					}else{
 						$dataImport['ready'][] = $importItem;
@@ -470,12 +547,25 @@ class StudentsController extends Controller {
 	}
 
 	public function reviewImport(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.Import" )){
+			exit;
+		}
 
 		$classArray = array();
-		$classes = \classes::get();
+		$classArray_id = array();
+		$classes = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get();
 		foreach ($classes as $class) {
-			$classArray[$class->id] = $class->className;
+			$classArray[$class->className] = $class->id;
+			$classArray_id[$class->id] = $class->className;
+		}
+
+		$sectionsArray = array();
+		$sections = \sections::get();
+		foreach ($sections as $section) {
+			if(isset( $classArray_id[$section->classId] )){
+				$sectionsArray[$section->classId][$section->id] = $section->sectionName." - ".$section->sectionTitle;					
+			}
 		}
 
 		if(\Input::has('importReview')){
@@ -509,8 +599,12 @@ class StudentsController extends Controller {
 					}
 				}
 
-				if($row['studentClass'] == "" OR !isset($classArray[$row['studentClass']])){
+				if($row['studentClass'] == "" OR !isset($classArray_id[$row['studentClass']])){
 					$row['error'][] = "class";
+				}
+
+				if($this->panelInit->settingsArray['enableSections'] == true AND ( !isset($row['studentSection']) || $row['studentSection'] == "" || !isset($sectionsArray[$row['studentClass']][$row['studentSection']]) ) ){
+					$row['error'][] = "section";
 				}
 
 				if(isset($row['error']) AND count($row['error']) > 0){
@@ -523,6 +617,14 @@ class StudentsController extends Controller {
 			if(count($dataImport['revise']) > 0){
 				return $this->panelInit->apiOutput(false,$this->panelInit->language['Import'],$this->panelInit->language['reviseImportData'],$dataImport);
 			}else{
+
+				//Get the default role
+				$def_role = \roles::where('def_for','student')->select('id');
+				if($def_role->count() == 0){
+					return $this->panelInit->apiOutput(false,'Import','No default role assigned for teachers, Please contact administartor');
+				}
+				$def_role = $def_role->first();
+
 				foreach($dataImport['ready'] as $value){
 					$User = new \User();
 					if(isset($value['email'])){
@@ -563,8 +665,9 @@ class StudentsController extends Controller {
 					if(isset($value['studentSection'])){
 						$User->studentSection = $value['studentSection'];
 					}
-					$User->birthday = '["mail","sms","phone"]';
+					$User->comVia = '["mail","sms","phone"]';
 					$User->account_active = "1";
+					$User->role_perm = $def_role->id;
 					$User->save();
 
 					$studentAcademicYears = new \student_academic_years();
@@ -586,8 +689,74 @@ class StudentsController extends Controller {
 		exit;
 	}
 
+	public function preAdmission(){
+		$toReturn = array();
+
+		$toReturn['classes'] = $classes = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get()->toArray();
+		$classArray = array();
+		$classesIds = array();
+		foreach($classes as $value){
+			$classesIds[] = $value['id'];
+			$classArray[$value['id']] = $value['className'];
+		}
+
+		$transport_vehicles = array();
+		$transport_vehicles_ =  \transport_vehicles::get()->toArray();
+		foreach ($transport_vehicles_ as $key => $value) {
+			$transport_vehicles[$value['id']] = $value['plate_number'] . " ( " .$value['driver_name'] ." )";
+		}
+		
+		$toReturn['transports'] = array();
+		$toReturn['transport_vehicles'] = array();
+		$transports =  \transportation::get()->toArray();
+		foreach ($transports as $key => $value) {
+			$value['vehicles_list'] = json_decode($value['vehicles_list'],true);
+			$toReturn['transports'][$value['id']] = $value;
+			$toReturn['transports'][$value['id']]['vehicles'] = array();
+			if(is_array($value['vehicles_list'] )){
+				foreach ($value['vehicles_list'] as $key_ => $value_) {
+					if(isset($transport_vehicles[ $value_ ])){
+						$toReturn['transports'][$value['id']]['vehicles'][ $value_ ] = $transport_vehicles[ $value_ ];					
+					}
+				}	
+			}
+		}
+
+		$sectionArray = array();
+		if(count($classesIds) > 0){
+			$toReturn['sections'] = $sections = \sections::whereIn('classId',$classesIds)->get()->toArray();
+			foreach($sections as $value){
+				$sectionArray[$value['id']] = $value['sectionName'] . " - ". $value['sectionTitle'];
+			}
+		}
+
+		$toReturn['hostel'] = array();
+		$hostel = \hostel::get()->toArray();
+		$hostelCat = \hostel_cat::get()->toArray();
+		$hostelMail = array();
+
+		foreach ($hostel as $value) {
+			$hostelMail[$value['id']] = $value['hostelTitle'];
+		}
+
+		foreach ($hostelCat as $value) {
+			if(isset($hostelMail[$value['catTypeId']])){
+				$toReturn['hostel'][$value['id']] =  $hostelMail[$value['catTypeId']] . " - " . $value['catTitle'];
+			}
+		}
+
+		$toReturn['roles'] = \roles::select('id','role_title')->get();
+		$toReturn['student_categories'] = \student_categories::select('id','cat_title')->get();
+		
+		return $toReturn;
+	}
+
 	public function create(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.admission" )){
+			exit;
+		}
+
 		if(\User::where('username',trim(\Input::get('username')))->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['addStudent'],$this->panelInit->language['usernameUsed']);
 		}
@@ -596,8 +765,24 @@ class StudentsController extends Controller {
 				return $this->panelInit->apiOutput(false,$this->panelInit->language['addStudent'],$this->panelInit->language['mailUsed']);
 			}
 		}
+		if(\Input::has('studentRollId') AND \User::where('studentRollId',trim(\Input::get('studentRollId')))->count() > 0){
+			return $this->panelInit->apiOutput(false,$this->panelInit->language['addStudent'],"Student roll id already used before.");
+		}
+		if(\Input::has('admission_number') AND \User::where('admission_number',trim(\Input::get('admission_number')))->count() > 0){
+			return $this->panelInit->apiOutput(false,$this->panelInit->language['addStudent'],"Student Admission number already used before.");
+		}
+
+		//Get the default role
+		$def_role = \roles::where('def_for','student')->select('id');
+		if($def_role->count() == 0){
+			return $this->panelInit->apiOutput(false,'Import','No default role assigned for teachers, Please contact administartor');
+		}
+		$def_role = $def_role->first();
+
 		$User = new \User();
-		$User->email = \Input::get('email');
+		if(\Input::has('email')){
+			$User->email = \Input::get('email');
+		}
 		$User->username = \Input::get('username');
 		$User->fullName = \Input::get('fullName');
 		$User->password = \Hash::make(\Input::get('password'));
@@ -612,7 +797,12 @@ class StudentsController extends Controller {
 		if($this->panelInit->settingsArray['enableSections'] == true){
 			$User->studentSection = \Input::get('studentSection');
 		}
-		$User->transport = \Input::get('transport');
+		if(\Input::has('transport')){
+		    $User->transport = \Input::get('transport');
+		}
+		if(\Input::has('transport_vehicle')){
+		    $User->transport_vehicle = \Input::get('transport_vehicle');
+		}
 		if(\Input::has('hostel')){
 			$User->hostel = \Input::get('hostel');
 		}
@@ -625,18 +815,95 @@ class StudentsController extends Controller {
 		$User->isLeaderBoard = "";
 		if(\Input::has('biometric_id')){
 			$User->biometric_id = \Input::get('biometric_id');			
+		}else{
+			$User->biometric_id = "";
 		}
 		$User->account_active = "1";
-		$User->save();
+		$User->role_perm = $def_role->id;
+
+		$User->medical = json_encode(\Input::get('med_data'));
+
+		if(\Input::has('admission_number')){
+			$User->admission_number = \Input::get('admission_number');
+		}
+		if(\Input::has('admission_date')){
+			$User->admission_date = $this->panelInit->date_to_unix(\Input::get('admission_date'));
+		}
+		if(\Input::has('std_category')){
+			$User->std_category = \Input::get('std_category');
+		}
+
+		if(\Input::has('religion')){
+			$User->religion = \Input::get('religion');
+		}
+
+		if(\Input::has('father')){
+			$User->father_info = json_encode( \Input::get('father') );
+		}
+		if(\Input::has('mother')){
+			$User->mother_info = json_encode( \Input::get('mother') );
+		}
 
 		if (\Input::hasFile('photo')) {
 			$fileInstance = \Input::file('photo');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addStudent'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = "profile_".$User->id.".jpg";
 			$file = $fileInstance->move('uploads/profile/',$newFileName);
 
 			$User->photo = "profile_".$User->id.".jpg";
-			$User->save();
 		}
+
+		$User->save();
+
+		if(\Input::has('linkParentSer')){
+			$linkParentSer = json_decode( \Input::get('linkParentSer'),true );
+			foreach ($linkParentSer as $key => $value) {
+				
+				$parent = \User::where('id',$value['id']);
+				if($parent->count() > 0){
+					$parent = $parent->select('id','parentOf')->first()->toArray();
+					$parent['parentOf'] = json_decode($parent['parentOf'],true);
+					if(!is_array($parent['parentOf'])){
+						$parent['parentOf'] = array();
+					}
+					$parent['parentOf'][] = array("student"=>$User->fullName,"relation"=>$value['relation'],"id"=>$User->id);
+					 \User::where('id',$value['id'])->update( array('parentOf'=>json_encode($parent['parentOf'])) );
+				}
+				
+			}
+		}
+
+		if(\Input::hasFile('docs_files')){
+			$docs_files = \Input::file('docs_files'); 
+			$docs_title = \Input::get('docs_title');
+			$docs_notes = \Input::get('docs_notes');
+			foreach ($docs_files as $key => $value) {
+
+				if(!$this->panelInit->validate_upload($value)){
+					continue;
+				}
+
+				$newFileName = $User->id."_".uniqid().".".$value->getClientOriginalExtension();
+				$file = $value->move('uploads/student_docs/',$newFileName);
+
+				$student_docs = new \student_docs();
+				$student_docs->user_id = $User->id;
+				if($docs_title[$key] != ""){
+					$student_docs->file_title = $docs_title[$key];
+				}
+				$student_docs->file_name = $newFileName;
+				if($docs_notes[$key] != ""){
+					$student_docs->file_notes = $docs_notes[$key];					
+				}
+				$student_docs->save();
+
+			}
+		}
+
 
 		$studentAcademicYears = new \student_academic_years();
 		$studentAcademicYears->studentId = $User->id;
@@ -647,12 +914,36 @@ class StudentsController extends Controller {
 		}
 		$studentAcademicYears->save();
 
-		return $this->panelInit->apiOutput(true,$this->panelInit->language['addStudent'],$this->panelInit->language['studentCreatedSuccess'],$User->toArray());
+		return $this->panelInit->apiOutput(true,$this->panelInit->language['addStudent'],$this->panelInit->language['studentCreatedSuccess']);
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "students.editStudent" )){
+			exit;
+		}
+
 		$data = \User::where('role','student')->where('id',$id)->first()->toArray();
 		$data['birthday'] = $this->panelInit->unix_to_date($data['birthday']);
+		if($data['admission_date'] != 0){
+			$data['admission_date'] = $this->panelInit->unix_to_date($data['admission_date']);			
+		}else{
+			$data['admission_date'] = "";
+		}
+
+		$data['father'] = json_decode($data['father_info'],true);
+		if(!is_array($data['father'])){
+			$data['father'] = array();
+		}
+		$data['mother'] = json_decode($data['mother_info'],true);
+		if(!is_array($data['mother'])){
+			$data['mother'] = array();
+		}
+
+		$data['med_data'] = json_decode($data['medical'],true);
+		if(!is_array($data['med_data'])){
+			$data['med_data'] = array();
+		}
 
 		$data['comVia'] = json_decode($data['comVia'],true);
 		if(!is_array($data['comVia'])){
@@ -665,6 +956,20 @@ class StudentsController extends Controller {
 			$data['academicYear'][$value->id] = $value->yearTitle;
 		}
 
+		$data['docs'] = \student_docs::where('user_id',$id)->get();
+
+		$data['parentInfo'] = array();
+		$parents = \User::where('role','parent')->select('id','parentOf','fullName')->where('parentOf','LIKE','%"id":'.$id.'%')->get()->toArray();
+		foreach ($parents as $key => $value) {
+			$value['parentOf'] = json_decode($value['parentOf'],true);
+			foreach ($value['parentOf'] as $key_ => $value_) {
+				if($value_['id'] == $id){
+					$data['parentInfo'][] = array("parent"=>$value['fullName'],"relation"=>$value_['relation'],"id"=>$value['id']);					
+				}
+			}
+		}
+		$data['parentInfoSer'] = json_encode($data['parentInfo']);
+
 		$DashboardController = new DashboardController();
 		$data['studentAcademicYears'] = array();
 		$academicYear = \student_academic_years::where('studentId',$id)->orderBy('id','ASC')->get();
@@ -675,8 +980,22 @@ class StudentsController extends Controller {
 		return $data;
 	}
 
+	function rem_std_docs(){
+		if ( $postDelete = \student_docs::where('id',\Input::get('id'))->first() )
+        {
+        	@unlink('uploads/student_docs/'.$postDelete->file_name);
+            $postDelete->delete();
+            return $this->panelInit->apiOutput(true,$this->panelInit->language['delFile'],$this->panelInit->language['fileDeleted']);
+        }else{
+            return $this->panelInit->apiOutput(false,$this->panelInit->language['delFile'],$this->panelInit->language['fileNotExist']);
+        }
+	}
+
 	function leaderboard($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.stdLeaderBoard" )){
+			exit;
+		}
 
 		$user = \User::where('id',$id)->first();
 		$user->isLeaderBoard = \Input::get('isLeaderBoard');
@@ -693,7 +1012,11 @@ class StudentsController extends Controller {
 	}
 
 	function leaderboardRemove($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.stdLeaderBoard" )){
+			exit;
+		}
+
 		if ( $postDelete = \User::where('role','student')->where('id', $id)->where('isLeaderBoard','!=','')->first() )
         {
             \User::where('role','student')->where('id', $id)->update(array('isLeaderBoard' => ''));
@@ -704,49 +1027,158 @@ class StudentsController extends Controller {
 	}
 
 	function edit($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.editStudent" )){
+			exit;
+		}
+
 		if(\User::where('username',trim(\Input::get('username')))->where('id','!=',$id)->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['editStudent'],$this->panelInit->language['usernameUsed']);
 		}
 		if(isset($this->panelInit->settingsArray['emailIsMandatory']) AND $this->panelInit->settingsArray['emailIsMandatory'] == 1){
 			if(\User::where('email',\Input::get('email'))->where('id','!=',$id)->count() > 0){
-				return $this->panelInit->apiOutput(false,$this->panelInit->language['addStudent'],$this->panelInit->language['mailUsed']);
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editStudent'],$this->panelInit->language['mailUsed']);
 			}
 		}
+		if(\Input::has('studentRollId') AND \User::where('studentRollId',trim(\Input::get('studentRollId')))->count() > 0){
+			return $this->panelInit->apiOutput(false,$this->panelInit->language['addStudent'],"Student roll id already used before.");
+		}
+		if(\Input::has('admission_number') AND \User::where('admission_number',trim(\Input::get('admission_number')))->count() > 0){
+			return $this->panelInit->apiOutput(false,$this->panelInit->language['addStudent'],"Student Admission number already used before.");
+		}
+
 		$User = \User::find($id);
-		$User->email = \Input::get('email');
+		if(\Input::has('email')){
+			$User->email = \Input::get('email');
+		}
 		$User->username = \Input::get('username');
 		$User->fullName = \Input::get('fullName');
-		if(\Input::get('password') != ""){
+		if(\Input::has('password')){
 			$User->password = \Hash::make(\Input::get('password'));
 		}
+		$User->role = "student";
 		$User->studentRollId = \Input::get('studentRollId');
 		$User->gender = \Input::get('gender');
 		$User->address = \Input::get('address');
 		$User->phoneNo = \Input::get('phoneNo');
 		$User->mobileNo = \Input::get('mobileNo');
-		$User->transport = \Input::get('transport');
+		$User->studentAcademicYear = $this->panelInit->selectAcYear;
+		if(\Input::has('transport')){
+		    $User->transport = \Input::get('transport');
+		}
+		if(\Input::has('transport_vehicle')){
+		    $User->transport_vehicle = \Input::get('transport_vehicle');
+		}
 		if(\Input::has('hostel')){
 			$User->hostel = \Input::get('hostel');
 		}
 		if(\Input::get('birthday') != ""){
 			$User->birthday = $this->panelInit->date_to_unix(\Input::get('birthday'));
 		}
+		if(\Input::has('comVia')){
+			$User->comVia = json_encode(\Input::get('comVia'));
+		}
+		$User->isLeaderBoard = "";
+		if(\Input::has('biometric_id')){
+			$User->biometric_id = \Input::get('biometric_id');			
+		}else{
+			$User->biometric_id = "";
+		}
+		$User->account_active = "1";
+
+		$User->medical = json_encode(\Input::get('med_data'));
+
+		if(\Input::has('admission_number')){
+			$User->admission_number = \Input::get('admission_number');
+		}
+		if(\Input::has('admission_date')){
+			$User->admission_date = $this->panelInit->date_to_unix(\Input::get('admission_date'));
+		}
+		if(\Input::has('std_category')){
+			$User->std_category = \Input::get('std_category');
+		}
+
+		if(\Input::has('religion')){
+			$User->religion = \Input::get('religion');
+		}
+
+		if(\Input::has('father')){
+			$User->father_info = json_encode( \Input::get('father') );
+		}
+		if(\Input::has('mother')){
+			$User->mother_info = json_encode( \Input::get('mother') );
+		}
 
 		if (\Input::hasFile('photo')) {
 			$fileInstance = \Input::file('photo');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editStudent'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = "profile_".$User->id.".jpg";
 			$file = $fileInstance->move('uploads/profile/',$newFileName);
 
 			$User->photo = "profile_".$User->id.".jpg";
 		}
-		if(\Input::has('comVia')){
-			$User->comVia = json_encode(\Input::get('comVia'));
-		}
-		if(\Input::has('biometric_id')){
-			$User->biometric_id = \Input::get('biometric_id');			
-		}
+
 		$User->save();
+
+		if(\Input::has('linkParentSer')){
+			$linkParentSer = json_decode( \Input::get('linkParentSer'),true );
+			foreach ($linkParentSer as $key => $value) {
+				
+				$parent = \User::where('id',$value['id']);
+				if($parent->count() > 0){
+					$parent = $parent->select('id','parentOf')->first()->toArray();
+					if (strpos($parent['parentOf'], 'id":'.$id) == false) {
+						$parent['parentOf'] = json_decode($parent['parentOf'],true);
+						if(!is_array($parent['parentOf'])){
+							$parent['parentOf'] = array();
+						}
+						$parent['parentOf'][] = array("student"=>$User->fullName,"relation"=>$value['relation'],"id"=>$User->id);
+						\User::where('id',$value['id'])->update( array('parentOf'=>json_encode($parent['parentOf'])) );
+					}
+				}
+				
+			}
+		}
+
+		if(\Input::has('docs_id')){
+			$docs_files = \Input::file('docs_files'); 
+			$docs_title = \Input::get('docs_title');
+			$docs_notes = \Input::get('docs_notes');
+			$docs_id = \Input::get('docs_id');
+			foreach ($docs_id as $key => $value) {
+
+				if(!$this->panelInit->validate_upload($docs_files[$key])){
+					continue;
+				}
+
+				if($value == 0){
+					if(!is_object($docs_files[$key])){
+						continue;
+					}
+					$newFileName = $User->id."_".uniqid().".".$docs_files[$key]->getClientOriginalExtension();
+					$file = $docs_files[$key]->move('uploads/student_docs/',$newFileName);
+
+					$student_docs = new \student_docs();
+					$student_docs->file_name = $newFileName;
+				}else{
+					$student_docs = \student_docs::find($value);
+				}
+				
+				$student_docs->user_id = $User->id;
+				if($docs_title[$key] != ""){
+					$student_docs->file_title = $docs_title[$key];
+				}
+				if($docs_notes[$key] != ""){
+					$student_docs->file_notes = $docs_notes[$key];					
+				}
+				$student_docs->save();
+
+			}
+		}
 
 		if(\Input::has('academicYear')){
 			$studentAcademicYears = \Input::get('academicYear');
@@ -776,11 +1208,15 @@ class StudentsController extends Controller {
 			}
 		}
 
-		return $this->panelInit->apiOutput(true,$this->panelInit->language['editStudent'],$this->panelInit->language['studentModified'],$User->toArray());
+		return $this->panelInit->apiOutput(true,$this->panelInit->language['editStudent'],$this->panelInit->language['studentModified']);
 	}
 
 	function medical($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.medHistory" )){
+			exit;
+		}
+
 		$medicalInfo = array('height'=>'','weight'=>'','rh'=>'','inspol'=>'','vacc'=>'','premed'=>'','prfcli'=>'','disab'=>'','contact'=>'','aller'=>'','medica'=>'','immu'=>'','diet'=>'','frac'=>'','surg'=>'','rema'=>'',);
 
 		$user = \User::where('id',$id)->select('medical')->first()->toArray();
@@ -796,7 +1232,10 @@ class StudentsController extends Controller {
 	}
 
 	function saveMedical(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "students.medHistory" )){
+			exit;
+		}
 
 		$User = \User::find(\Input::get('userId'));
 		$User->medical = json_encode(\Input::get('data'));
@@ -888,7 +1327,7 @@ class StudentsController extends Controller {
 					$marks[$mark->examId]['data'][$mark->id]['points'] = $value['points'];
 					$marks[$mark->examId]['data'][$mark->id]['grade'] = $key;
 					if(is_numeric($mark->totalMarks)){
-						$marks[$mark->examId]['totalMarks'] += $mark->totalMarks;						
+						$marks[$mark->examId]['totalMarks'] += $mark->totalMarks;
 					}
 					break;
 				}
@@ -898,6 +1337,8 @@ class StudentsController extends Controller {
 		foreach($marks as $key => $value){
 			if(isset($value['points']) AND $value['counter'] AND $value['counter'] > 0){
 				$marks[$key]['pointsAvg'] = round($value['points'] / $value['counter'],2);
+			}else{
+				$marks[$key]['pointsAvg'] = 0;
 			}
 		}
 
@@ -913,6 +1354,7 @@ class StudentsController extends Controller {
 	}
 
 	function marksheetPDF($studentId,$exam){
+
 		if(\Auth::user()->role == "student"){
 			$studentId = \Auth::user()->id;
 		}
@@ -1103,6 +1545,7 @@ class StudentsController extends Controller {
 	}
 
 	function marksheetBulkPDF(){
+
 		$users = \User::where('studentClass',\Input::get('classId'))->orderByRaw("studentRollId + 0 ASC")->get();
 		$examsList = \exams_list::where('id',\Input::get('examId'))->first()->toArray();
 		$examsList['examMarksheetColumns'] = json_decode($examsList['examMarksheetColumns'],true);
@@ -1259,6 +1702,11 @@ class StudentsController extends Controller {
 	}
 
 	function attendance($id){
+
+		if(!$this->panelInit->can( "students.Attendance" )){
+			exit;
+		}
+
 		$toReturn = array();
 		$toReturn['attendanceModel'] = $this->data['panelInit']->settingsArray['attendanceModel'];
 		$toReturn['attendance'] = \attendance::where('studentId',$id)->orderBy('date')->get()->toArray();
@@ -1370,5 +1818,16 @@ class StudentsController extends Controller {
 		}
 
 		return $return;
+	}
+
+	public function search_parent($parent){
+		$students = \User::where('role','parent')->where(function($query) use ($parent){
+														$query->where('fullName','like','%'.$parent.'%')->orWhere('username','like','%'.$parent.'%')->orWhere('email','like','%'.$parent.'%');
+													})->get();
+		$retArray = array();
+		foreach ($students as $parent) {
+			$retArray[$parent->id] = array("id"=>$parent->id,"name"=>$parent->fullName,"email"=>$parent->email);
+		}
+		return json_encode($retArray);
 	}
 }

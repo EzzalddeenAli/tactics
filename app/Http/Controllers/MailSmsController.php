@@ -8,7 +8,7 @@ class MailSmsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -20,12 +20,6 @@ class MailSmsController extends Controller {
 		$this->data['users'] = $this->panelInit->getAuthUser();
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
-		}
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
-		if($this->data['users']->role == "teacher" AND $this->data['users']->allowTeachersMailSMS == 'none') exit;
-
-		if(!$this->panelInit->hasThePerm('mailsms')){
-			exit;
 		}
 	}
 
@@ -65,6 +59,11 @@ class MailSmsController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "mailsms.mailSMSSend" )){
+			exit;
+		}
+
 		$mailsms = new \mailsms();
 
 		if($this->data['users']->role == "teacher" AND \Input::get('userType') != "students"){
@@ -147,7 +146,7 @@ class MailSmsController extends Controller {
 					
 					$sendMessage_replaced = str_replace($search_array, $replace_array, $sendMessage);
 
-					$SmsHandler->mail($user->email,\Input::get('messageTitle'),$sendMessage,$user->fullName);
+					$SmsHandler->mail($user->email,\Input::get('messageTitle'),$sendMessage_replaced,$user->fullName);
 				}
 			}
 		}
@@ -160,7 +159,7 @@ class MailSmsController extends Controller {
 
 					$sendMessage_replaced = str_replace($search_array, $replace_array, $sendMessage);
 					
-					$SmsHandler->sms($user->mobileNo,strip_tags( trim(str_replace(PHP_EOL,' ',strip_tags($sendMessage))) ));
+					$SmsHandler->sms($user->mobileNo,strip_tags( trim(str_replace(PHP_EOL,' ',strip_tags($sendMessage_replaced))) ));
 				}
 			}
 		}

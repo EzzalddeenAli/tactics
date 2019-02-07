@@ -8,7 +8,7 @@ class mobileNotifController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -20,15 +20,16 @@ class mobileNotifController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
 
-		if(!$this->panelInit->hasThePerm('mobileNotif')){
+		if(!$this->panelInit->can( array("mobileNotifications.sendNewNotification") )){
 			exit;
 		}
+
 	}
 
 	public function listAll($page = 1)
-	{
+	{		
+
 		$return = array();
 		$mobNotifications = \mob_notifications::orderBy('id','desc');
 		$return['totalItems'] = $mobNotifications->count();
@@ -56,7 +57,7 @@ class mobileNotifController extends Controller {
 			$mobNotifications->notifToIds = json_encode(\Input::get('selectedUsers'));
 		}elseif(\Input::get('userType') == "students"){
 			$mobNotifications->notifTo = "students";
-			$mobNotifications->notifToIds = \Input::get('classId');
+			$mobNotifications->notifToIds = json_encode(\Input::get('classId'));
 		}else{
 			$mobNotifications->notifTo = \Input::get('userType');
 			$mobNotifications->notifToIds = "";
@@ -71,7 +72,7 @@ class mobileNotifController extends Controller {
 
 		if(isset($this->panelInit->settingsArray['firebase_apikey']) AND $this->panelInit->settingsArray['firebase_apikey'] != ""){
 			//Send the PUSH Notifs.
-
+			
 			$users_list = \User::select('firebase_token');
 			if(\Input::get('userType') == "users"){
 				$usersList = array();
@@ -95,7 +96,7 @@ class mobileNotifController extends Controller {
 
 				$users_list = $users_list->where('role','teacher')->whereIn('id',$selectedUsersArray);
 			}elseif(\Input::get('userType') == "students"){
-
+				
 				$users_list = $users_list->where('role','student')->whereIn('studentClass',\Input::get('classId'));
 				if(\Input::has('sectionId')){
 					$users_list = $users_list->whereIn('studentSection',\Input::get('sectionId'));

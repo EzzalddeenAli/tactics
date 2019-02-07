@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-if="userRole == 'admin'" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addExam}}</button>
+                <button ng-show="$root.can('examsList.addExam')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addExam}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control input-sm">
@@ -27,19 +27,20 @@
                                 <th>{{phrase.examName}}</th>
                                 <th>{{phrase.examDesc}}</th>
                                 <th>{{phrase.Date}}</th>
-                                <th ng-if="userRole == 'admin' || userRole == 'teacher'">{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('examsList.showMarks') || $root.can('examsList.controlMarksExam') || $root.can('examsList.examDetailsNot') || $root.can('examsList.editExam') || $root.can('examsList.delExam')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="exam in examsList | filter:searchText">
                                 <td>
-                                    <a class="ahref" ng-click="examDetails(exam.id)">{{exam.examTitle}}</a>
+                                    <a ng-show="$root.can('examsList.View')" class="ahref" ng-click="examDetails(exam.id)">{{exam.examTitle}}</a>
+                                    <span ng-show="!$root.can('examsList.View')">{{exam.examTitle}}</span>
                                 </td>
                                 <td>{{exam.examDescription}}</td>
                                 <td>{{exam.examDate}} -> {{exam.examEndDate}}</td>
-                                <td ng-if="userRole == 'admin' || userRole == 'teacher'">
-                                    <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="marks(exam)" type="button" class="btn btn-success btn-circle" title="{{phrase.showMarks}}" tooltip><i class="fa fa-check-square-o"></i></button>
-                                    <button ng-if="userRole == 'admin'" ng-click="notify(exam.id)" type="button" class="btn btn-success btn-circle" title="{{phrase.sendExamMarks}}" tooltip><i class="fa fa fa-warning"></i></button>
-                                    <button ng-if="userRole == 'admin'" ng-click="edit(exam.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-if="userRole == 'admin'" ng-click="remove(exam,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('examsList.showMarks') || $root.can('examsList.controlMarksExam') || $root.can('examsList.examDetailsNot') || $root.can('examsList.editExam') || $root.can('examsList.delExam')">
+                                    <button ng-show="$root.can('examsList.showMarks') || $root.can('examsList.controlMarksExam')" ng-click="marks(exam)" type="button" class="btn btn-success btn-circle" title="{{phrase.showMarks}}" tooltip><i class="fa fa-check-square-o"></i></button>
+                                    <button ng-show="$root.can('examsList.examDetailsNot')" ng-click="notify(exam.id)" type="button" class="btn btn-success btn-circle" title="{{phrase.sendExamMarks}}" tooltip><i class="fa fa fa-warning"></i></button>
+                                    <button ng-show="$root.can('examsList.editExam')" ng-click="edit(exam.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('examsList.delExam')" ng-click="remove(exam,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!examsList.length"><td class="noTableData" colspan="5">{{phrase.noExams}}</td></tr>

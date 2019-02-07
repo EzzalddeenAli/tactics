@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addMaterial}}</button>
+                <button ng-show="$root.can('studyMaterial.addMaterial')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addMaterial}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text"  name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control input-sm">
@@ -26,15 +26,15 @@
                             <tr>
                                 <th>{{phrase.materialTitle}}</th>
                                 <th>{{phrase.materialDesc}}</th>
-                                <th>{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('studyMaterial.Download') || $root.can('studyMaterial.editMaterial') || $root.can('studyMaterial.delMaterial')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="material in materials | filter:searchText">
                                 <td>{{material.material_title}}</td>
                                 <td>{{material.material_description}}</td>
-                                <td>
-                                    <a target="_blank" href="{{'index.php/materials/download/'+material.id}}"><button type="button" class="btn btn-warning btn-circle" title="{{phrase.Download}}" tooltip><i class="fa fa-cloud-download"></i></button></a>
-                                    <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="edit(material.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="remove(material,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('studyMaterial.Download') || $root.can('studyMaterial.editMaterial') || $root.can('studyMaterial.delMaterial')">
+                                    <a ng-show="$root.can('studyMaterial.Download')" target="_blank" href="{{'index.php/materials/download/'+material.id}}"><button type="button" class="btn btn-warning btn-circle" title="{{phrase.Download}}" tooltip><i class="fa fa-cloud-download"></i></button></a>
+                                    <button ng-show="$root.can('studyMaterial.editMaterial')" ng-click="edit(material.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('studyMaterial.delMaterial')" ng-click="remove(material,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="materials.length == '0'"><td class="noTableData" colspan="5">{{phrase.noMaterialData}}</td></tr>

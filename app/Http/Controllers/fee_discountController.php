@@ -8,7 +8,7 @@ class fee_discountController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,19 +22,24 @@ class fee_discountController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
-
-		if(!$this->panelInit->hasThePerm('accounting')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("FeeDiscount.list","FeeDiscount.addFeeDiscount","FeeDiscount.editFeeDiscount","FeeDiscount.delFeeDiscount","FeeDiscount.assignUser") )){
+			exit;
+		}
+		
 		return \fee_discount::get();
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "FeeDiscount.delFeeDiscount" )){
+			exit;
+		}
+
 		if ( $postDelete = \fee_discount::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -45,6 +50,10 @@ class fee_discountController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "FeeDiscount.addFeeDiscount" )){
+			exit;
+		}
 
 		$fee_discount = new \fee_discount();
 		$fee_discount->discount_name = \Input::get('discount_name');
@@ -61,12 +70,22 @@ class fee_discountController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( array("FeeDiscount.editFeeDiscount","FeeDiscount.assignUser") )){
+			exit;
+		}
+
 		$fee_discount = \fee_discount::where('id',$id)->first()->toArray();
 
 		return $fee_discount;
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "FeeDiscount.editFeeDiscount" )){
+			exit;
+		}
+
 		$fee_discount = \fee_discount::find($id);
 		$fee_discount->discount_name = \Input::get('discount_name');
 		if(\Input::has('dicount_description')){
@@ -91,6 +110,11 @@ class fee_discountController extends Controller {
 	}
 
 	function search_assignments($area){
+
+		if(!$this->panelInit->can( "FeeDiscount.assignUser" )){
+			exit;
+		}
+
 		$keyword = \Input::get('keyword');
 		if($area == "invoices"){
 			$invoices = \payments::where('paymentStatus','0')->where(function($query) use ($keyword){
@@ -120,6 +144,11 @@ class fee_discountController extends Controller {
 	}
 
 	function get_assignments($id){
+
+		if(!$this->panelInit->can( "FeeDiscount.assignUser" )){
+			exit;
+		}
+
 		$toReturn = array();
 
 		$toReturn['fee_discount'] = \fee_discount::where('id',$id)->first()->toArray();
@@ -130,6 +159,11 @@ class fee_discountController extends Controller {
 	}
 
 	function set_assignments($id){
+
+		if(!$this->panelInit->can( "FeeDiscount.assignUser" )){
+			exit;
+		}
+
 		$fee_discount = \fee_discount::find($id);
 		$discount_assignment = json_decode($fee_discount->discount_assignment,true);
 
@@ -248,6 +282,11 @@ class fee_discountController extends Controller {
 	}
 
 	function remove_assignment($id){
+
+		if(!$this->panelInit->can( "FeeDiscount.assignUser" )){
+			exit;
+		}
+
 		$fee_discount = \fee_discount::find($id);
 		$discount_assignment = json_decode($fee_discount->discount_assignment,true);
 
@@ -265,6 +304,11 @@ class fee_discountController extends Controller {
 	}
 
 	function remove_discount_invoices($fee_discount_id=""){
+
+		if(!$this->panelInit->can( "FeeDiscount.assignUser" )){
+			exit;
+		}
+		
 		$available_discount = \fee_discount::where('discount_status','1')->get();
 		$section_enabeld = $this->panelInit->settingsArray['enableSections'];
 		$userIds = array();

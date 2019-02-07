@@ -8,7 +8,7 @@ class ParentsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,18 +21,23 @@ class ParentsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
-
-		if(!$this->panelInit->hasThePerm('parents')){
-			exit;
-		}
 	}
 
 	function waitingApproval(){
+
+		if(!$this->panelInit->can( "parents.Approve" )){
+			exit;
+		}
+
 		return \User::where('role','parent')->where('activated','0')->orderBy('id','DESC')->get();
 	}
 
 	function approveOne($id){
+
+		if(!$this->panelInit->can( "parents.Approve" )){
+			exit;
+		}
+
 		$user = \User::find($id);
 		$user->activated = 1;
 		$user->save();
@@ -41,6 +46,11 @@ class ParentsController extends Controller {
 	}
 
 	function listAllData($page = 1){
+
+		if(!$this->panelInit->can( array("parents.list","parents.AddParent","parents.editParent","parents.delParent","parents.Approve","parents.Import","parents.Export") )){
+			exit;
+		}
+
 		$toReturn = array();
 		$toReturn['parents'] = \User::where('role','parent')->where('activated','1');
 
@@ -85,17 +95,27 @@ class ParentsController extends Controller {
 		}
 
 		$toReturn['parents'] = $toReturn['parents']->take('20')->skip(20* ($page - 1) )->get()->toArray();
+		$toReturn['roles'] = \roles::select('id','role_title')->get();
 
 		return $toReturn;
 	}
 
 	public function listAll($page = 1)
 	{
+
+		if(!$this->panelInit->can( array("parents.list","parents.AddParent","parents.editParent","parents.delParent","parents.Approve","parents.Import","parents.Export") )){
+			exit;
+		}
+
 		return $this->listAllData($page);
 	}
 
 	public function export(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "parents.Export" )){
+			exit;
+		}
+
 		$data = array(1 => array ( 'Full Name','User Name','E-mail','Gender','Address','Phone No','Mobile No','birthday','Profession','password','ParentOf'));
 		$student = \User::where('role','parent')->get();
 		foreach ($student as $value) {
@@ -138,7 +158,10 @@ class ParentsController extends Controller {
 	}
 
 	public function exportpdf(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "parents.Export" )){
+			exit;
+		}
 
 		$header = array ($this->panelInit->language['FullName'],$this->panelInit->language['username'],$this->panelInit->language['email'],$this->panelInit->language['Gender'],$this->panelInit->language['Address'],$this->panelInit->language['phoneNo'],$this->panelInit->language['mobileNo']);
 		$data = array();
@@ -183,7 +206,10 @@ class ParentsController extends Controller {
 	}
 
 	public function import($type){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "parents.Import" )){
+			exit;
+		}
 
 		if (\Input::hasFile('excelcsv')) {
 			if ( $_FILES['excelcsv']['tmp_name'] )
@@ -262,7 +288,10 @@ class ParentsController extends Controller {
 	}
 
 	public function reviewImport(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "parents.Import" )){
+			exit;
+		}
 
 		$classArray = array();
 		$classes = \classes::get();
@@ -295,6 +324,14 @@ class ParentsController extends Controller {
 			if(count($dataImport['revise']) > 0){
 				return $this->panelInit->apiOutput(false,$this->panelInit->language['Import'],$this->panelInit->language['reviseImportData'],$dataImport);
 			}else{
+
+				//Get the default role
+				$def_role = \roles::where('def_for','parent')->select('id');
+				if($def_role->count() == 0){
+					return $this->panelInit->apiOutput(false,'Import','No default role assigned for teachers, Please contact administartor');
+				}
+				$def_role = $def_role->first();
+
 				foreach($dataImport['ready'] as $value){
 					$User = new \User();
 					if(isset($value['email'])){
@@ -342,6 +379,7 @@ class ParentsController extends Controller {
 						$User->parentOf = $value['parentOf'];
 					}
 					$User->birthday = '["mail","sms","phone"]';
+					$User->role_perm = $def_role->id;
 					$User->account_active = "1";
 					$User->save();
 				}
@@ -355,6 +393,11 @@ class ParentsController extends Controller {
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "parents.delParent" )){
+			exit;
+		}
+
 		if ( $postDelete = \User::where('role','parent')->where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -365,7 +408,11 @@ class ParentsController extends Controller {
 	}
 
 	function account_status($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "parents.editParent" )){
+			exit;
+		}
+
 		$user = \User::where('role','parent')->where('id',$id)->first();
 
 		if($user->account_active == "1"){
@@ -391,12 +438,25 @@ class ParentsController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "parents.AddParent" )){
+			exit;
+		}
+
 		if(\User::where('username',trim(\Input::get('username')))->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['AddParent'],$this->panelInit->language['usernameUsed']);
 		}
 		if(\User::where('email',\Input::get('email'))->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['AddParent'],$this->panelInit->language['mailUsed']);
 		}
+
+		//Get the default role
+		$def_role = \roles::where('def_for','parent')->select('id');
+		if($def_role->count() == 0){
+			return $this->panelInit->apiOutput(false,'Import','No default role assigned for teachers, Please contact administartor');
+		}
+		$def_role = $def_role->first();
+
 		$User = new \User();
 		$User->username = \Input::get('username');
 		$User->email = \Input::get('email');
@@ -416,10 +476,16 @@ class ParentsController extends Controller {
 			$User->comVia = json_encode(\Input::get('comVia'));
 		}
 		$User->account_active = "1";
+		$User->role_perm = $def_role->id;
 		$User->save();
 
 		if (\Input::hasFile('photo')) {
 			$fileInstance = \Input::file('photo');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['AddParent'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = "profile_".$User->id.".jpg";
 			$file = $fileInstance->move('uploads/profile/',$newFileName);
 		}
@@ -428,6 +494,11 @@ class ParentsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "parents.editParent" )){
+			exit;
+		}
+
 		$data = \User::where('role','parent')->where('id',$id)->first()->toArray();
 		$data['birthday'] = $this->panelInit->unix_to_date($data['birthday']);
 		$data['parentOf'] = json_decode($data['parentOf']);
@@ -441,6 +512,11 @@ class ParentsController extends Controller {
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "parents.editParent" )){
+			exit;
+		}
+
 		if(\User::where('username',trim(\Input::get('username')))->where('id','<>',$id)->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['AddParent'],$this->panelInit->language['usernameUsed']);
 		}
@@ -470,6 +546,11 @@ class ParentsController extends Controller {
 
 		if (\Input::hasFile('photo')) {
 			$fileInstance = \Input::file('photo');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editParent'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
 			$newFileName = "profile_".$User->id.".jpg";
 			$file = $fileInstance->move('uploads/profile/',$newFileName);
 		}

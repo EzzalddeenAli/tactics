@@ -8,7 +8,7 @@ class MessagesController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -26,7 +26,7 @@ class MessagesController extends Controller {
 	public function listMessages($page = 1)
 	{
 		$toReturn = array();
-		$toReturn['messages'] = \DB::select(\DB::raw("SELECT messages_list.id as id,messages_list.lastMessageDate as lastMessageDate,messages_list.lastMessage as lastMessage,messages_list.messageStatus as messageStatus,users.fullName as fullName,users.id as userId from messages_list LEFT JOIN users ON users.id=IF(messages_list.userId = '".$this->data['users']->id."',messages_list.toId,messages_list.userId) where userId='".$this->data['users']->id."' order by id DESC limit 20 offset " . 20 * ($page - 1) ));
+		$toReturn['messages'] = \DB::select(\DB::raw("SELECT messages_list.id as id,messages_list.lastMessageDate as lastMessageDate,messages_list.lastMessage as lastMessage,messages_list.messageStatus as messageStatus,users.fullName as fullName,users.id as userId from messages_list LEFT JOIN users ON users.id=IF(messages_list.userId = '".$this->data['users']->id."',messages_list.toId,messages_list.userId) where userId='".$this->data['users']->id."' order by messages_list.lastMessageDate DESC limit 20 offset " . 20 * ($page - 1) ));
 		$toReturn['totalItems'] = \messages_list::where('userId',$this->data['users']->id)->count();
 
 		foreach ($toReturn['messages'] as $key => $value) {
@@ -178,67 +178,102 @@ class MessagesController extends Controller {
 	}
 
 	public function create(){
-		$users = \User::where('username',\Input::get('toId'))->orWhere('email',\Input::get('toId'));
-		if($users->count() == 0){
-			echo $this->panelInit->language['userisntExist'];
-			exit;
-		}
-		$users = $users->first();
+		$users_list = array();
 
-		$messagesList = \messages_list::where('userId',$this->data['users']->id)->where('toId',$users->id);
-		if($messagesList->count() == 0){
-			$messagesList = new \messages_list();
-			$messagesList->userId = $this->data['users']->id;
-			$messagesList->toId = $users->id;
+		if( is_array(\Input::get('toId')) ){
+
+			$users_ids = array();
+			$toId_list = \Input::get('toId');
+			foreach ($toId_list as $key => $value) {
+				$users_ids[] = $value['id'];
+			}
+
+			$users = \User::whereIn('id',$users_ids);
+			if($users->count() == 0){
+				echo $this->panelInit->language['userisntExist'];
+				exit;
+			}
+			$users_list = $users->get();
+
 		}else{
-			$messagesList = $messagesList->first();
-		}
-		$messagesList->lastMessage = \Input::get('messageText');
-		$messagesList->lastMessageDate = time();
-		$messagesList->messageStatus = 0;
-		$messagesList->save();
-		$toReturnId = $messagesList->id;
 
-		$messagesList_ = \messages_list::where('userId',$users->id)->where('toId',$this->data['users']->id);
-		if($messagesList_->count() == 0){
-			$messagesList_ = new \messages_list();
-			$messagesList_->userId = $users->id;
-			$messagesList_->toId = $this->data['users']->id;
+			$users = \User::where('username',\Input::get('toId'))->orWhere('email',\Input::get('toId'));
+			if($users->count() == 0){
+				echo $this->panelInit->language['userisntExist'];
+				exit;
+			}
+			$users = $users->first();
+			$users_list[] = $users;
+
+		}
+
+		
+		foreach ($users_list as $key => $users) {
+
+			if($users->id == $this->data['users']->id){
+				continue;
+			}
+
+			$messagesList = \messages_list::where('userId',$this->data['users']->id)->where('toId',$users->id);
+			if($messagesList->count() == 0){
+				$messagesList = new \messages_list();
+				$messagesList->userId = $this->data['users']->id;
+				$messagesList->toId = $users->id;
+			}else{
+				$messagesList = $messagesList->first();
+			}
+			$messagesList->lastMessage = \Input::get('messageText');
+			$messagesList->lastMessageDate = time();
+			$messagesList->messageStatus = 0;
+			$messagesList->save();
+			$toReturnId = $messagesList->id;
+
+			$messagesList_ = \messages_list::where('userId',$users->id)->where('toId',$this->data['users']->id);
+			if($messagesList_->count() == 0){
+				$messagesList_ = new \messages_list();
+				$messagesList_->userId = $users->id;
+				$messagesList_->toId = $this->data['users']->id;
+			}else{
+				$messagesList_ = $messagesList_->first();
+			}
+			$messagesList_->lastMessage = \Input::get('messageText');
+			$messagesList_->lastMessageDate = time();
+			$messagesList_->messageStatus = 1;
+			$messagesList_->save();
+			$toReturnId_ = $messagesList_->id;
+
+			$messages = new \messages();
+			$messages->messageId = $toReturnId;
+			$messages->userId = $this->data['users']->id;
+			$messages->fromId = $this->data['users']->id;
+			$messages->toId = $users->id;
+			$messages->messageText = \Input::get('messageText');
+			$messages->dateSent = time();
+			$messages->save();
+
+			$messages = new \messages();
+			$messages->messageId = $toReturnId_;
+			$messages->userId = $users->id;
+			$messages->fromId = $this->data['users']->id;
+			$messages->toId = $users->id;
+			$messages->messageText = \Input::get('messageText');
+			$messages->dateSent = time();
+			$messages->save();
+
+			//Send Push Notifications
+			$tokens_list = array();
+			if($users->firebase_token != ""){
+				$tokens_list[] = $users->firebase_token;
+				$this->panelInit->send_push_notification($tokens_list,$this->panelInit->language['newMessageFrom']." ".$this->data['users']->fullName,$this->panelInit->language['Messages'],"messages",$messagesList_->id);			
+			}
+
+		}
+		
+		if( count($users_list) == 1){
+			return json_encode(array('messageId'=>$toReturnId));
 		}else{
-			$messagesList_ = $messagesList_->first();
+			return json_encode(array('messageId'=>"home"));
 		}
-		$messagesList_->lastMessage = \Input::get('messageText');
-		$messagesList_->lastMessageDate = time();
-		$messagesList_->messageStatus = 1;
-		$messagesList_->save();
-		$toReturnId_ = $messagesList_->id;
-
-		$messages = new \messages();
-		$messages->messageId = $toReturnId;
-		$messages->userId = $this->data['users']->id;
-		$messages->fromId = $this->data['users']->id;
-		$messages->toId = $users->id;
-		$messages->messageText = \Input::get('messageText');
-		$messages->dateSent = time();
-		$messages->save();
-
-		$messages = new \messages();
-		$messages->messageId = $toReturnId_;
-		$messages->userId = $users->id;
-		$messages->fromId = $this->data['users']->id;
-		$messages->toId = $users->id;
-		$messages->messageText = \Input::get('messageText');
-		$messages->dateSent = time();
-		$messages->save();
-
-		//Send Push Notifications
-		$tokens_list = array();
-		if($users->firebase_token != ""){
-			$tokens_list[] = $users->firebase_token;
-			$this->panelInit->send_push_notification($tokens_list,$this->panelInit->language['newMessageFrom']." ".$this->data['users']->fullName,$this->panelInit->language['Messages'],"messages",$messagesList_->id);			
-		}
-
-		return json_encode(array('messageId'=>$toReturnId));
 	}
 
 	public function searchUser($user){

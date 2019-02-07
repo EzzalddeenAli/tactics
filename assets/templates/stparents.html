@@ -51,10 +51,10 @@
     <div class="col-12 listContent">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.AddParent}}</button>
+                <button ng-show="$root.can('parents.AddParent')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.AddParent}}</button>
                 <button ng-click="toggleSearch()" class="btn pull-right btn-success card-block-input-item">{{phrase.advSearch}}</button>
-                <button ng-click="waitingApproval()" class="btn pull-right btn-success card-block-input-item">{{phrase.waitingApproval}}</button>
-                <div ng-if="userRole == 'admin'" class="pull-right card-block-input-group card-block-input-item">
+                <button ng-show="$root.can('parents.Approve')" ng-click="waitingApproval()" class="btn pull-right btn-success card-block-input-item">{{phrase.waitingApproval}}</button>
+                <div ng-show="$root.can('parents.Export')" class="pull-right card-block-input-group card-block-input-item">
                     <div class="btn-group no-print">
                         <button type="button" class="btn btn-success btn-flat">{{phrase.Export}}</button>
                         <button type="button" class="btn btn-success btn-flat dropdown-toggle" data-toggle="dropdown">
@@ -67,7 +67,7 @@
                         </div>
                     </div>
                 </div>
-                <div ng-if="userRole == 'admin'" class="pull-right card-block-input-group card-block-input-item">
+                <div ng-show="$root.can('parents.Import')" class="pull-right card-block-input-group card-block-input-item">
                     <div class="btn-group no-print">
                         <button type="button" class="btn btn-success btn-flat">{{phrase.Import}}</button>
                         <button type="button" class="btn btn-success btn-flat dropdown-toggle" data-toggle="dropdown">
@@ -104,21 +104,21 @@
                                     <i ng-show="$root.dashboardData.sort.teachers == 'username DESC'" ng-click="sortItems('username ASC')" class="ahref mdi mdi-arrow-up-bold"></i>
                                 </th>
                                 <th>{{phrase.email}}</th>
-                                <th class="no-print">{{phrase.Operations}}</th>
+                                <th class="no-print" ng-show="$root.can('parents.editParent') || $root.can('parents.delParent')">{{phrase.Operations}}</th>
                             </tr>
                             <tr dir-paginate="parent in stparents | itemsPerPage:20" total-items="totalItems">
                                 <td>{{parent.id}}</td>
                                 <td>
                                     <img alt="{{parent.fullName}}" class="user-image img-circle" style="width:35px; height:35px;" ng-src="{{'index.php/dashboard/profileImage/'+parent.id}}">
                                     <a href="" ng-click="parentProfile( parent.id )">{{parent.fullName}}</a>
-                                    <i ng-class="{'color_red':parent.account_active==0,'color_green':parent.account_active==1}" class="fa fa-lightbulb-o"></i>
+                                    <i ng-show="$root.can('parents.delParent')" ng-class="{'color_red':parent.account_active==0,'color_green':parent.account_active==1}" class="fa fa-lightbulb-o"></i>
                                 </td>
                                 <td>{{parent.username}}</td>
                                 <td>{{parent.email}}</td>
-                                <td class="no-print">
-                                    <button ng-click="account_status(parent.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleStatus}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
-                                    <button ng-click="edit(parent.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(parent,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td class="no-print" ng-show="$root.can('parents.editParent') || $root.can('parents.delParent')">
+                                    <button ng-show="$root.can('parents.editParent')" ng-click="account_status(parent.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleStatus}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
+                                    <button ng-show="$root.can('parents.editParent')" ng-click="edit(parent.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('parents.delParent')" ng-click="remove(parent,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!stparents.length"><td class="noTableData" colspan="5">{{phrase.noParents}}</td></tr>

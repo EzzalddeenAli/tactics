@@ -51,7 +51,8 @@ Route::get('/preinstall', function() {
 // Dashboard
 
 Route::group( array('middleware'=>'web') ,function(){
-	Route::get('/','DashboardController@index');
+	Route::get('/','frontendPagesController@index');
+	Route::get('/portal','DashboardController@index');
 	Route::get('/cms','DashboardController@cms');
 
 	Route::post('auth/register', 'AuthController@register');
@@ -101,13 +102,13 @@ Route::group( array('middleware'=>'web') ,function(){
     Route::post('/admins/{id}','AdminsController@edit');
 
 	//Accountants
-	Route::get('/accountants','DashboardController@index');
-	Route::get('/accountants/listAll','accountantsController@listAll');
-	Route::post('/accountants','accountantsController@create');
-	Route::get('/accountants/{id}','accountantsController@fetch');
-    Route::post('/accountants/account_status/{id}','accountantsController@account_status');
-    Route::post('/accountants/delete/{id}','accountantsController@delete');
-    Route::post('/accountants/{id}','accountantsController@edit');
+	Route::get('/employees','DashboardController@index');
+	Route::get('/employees/listAll','employeesController@listAll');
+	Route::post('/employees','employeesController@create');
+	Route::get('/employees/{id}','employeesController@fetch');
+    Route::post('/employees/account_status/{id}','employeesController@account_status');
+    Route::post('/employees/delete/{id}','employeesController@delete');
+    Route::post('/employees/{id}','employeesController@edit');
 
 	//Teachers
 	Route::get('/teachers','DashboardController@index');
@@ -132,11 +133,13 @@ Route::group( array('middleware'=>'web') ,function(){
 
 	//Students
 	Route::get('/students','DashboardController@index');
+    Route::get('/students/preAdmission','StudentsController@preAdmission');
 	Route::post('/students/import/{type}','StudentsController@import');
     Route::post('/students/reviewImport','StudentsController@reviewImport');
 	Route::get('/students/export','StudentsController@export');
 	Route::get('/students/exportpdf','StudentsController@exportpdf');
 	Route::post('/students/upload','StudentsController@uploadFile');
+	Route::post('/students/rem_std_docs','StudentsController@rem_std_docs');
     Route::get('/students/waitingApproval','StudentsController@waitingApproval');
 	Route::get('/students/gradStdList','StudentsController@gradStdList');
     Route::post('/students/account_status/{id}','StudentsController@account_status');
@@ -146,6 +149,7 @@ Route::group( array('middleware'=>'web') ,function(){
     Route::get('/students/medical/{id}','StudentsController@medical');
 	Route::post('/students/medical','StudentsController@saveMedical');
 	Route::get('/students/attendance/{id}','StudentsController@attendance');
+	Route::get('/students/search_parent/{id}','StudentsController@search_parent');
 	Route::get('/students/profile/{id}','StudentsController@profile');
 	Route::post('/students/leaderBoard/{id}','StudentsController@leaderboard');
     Route::get('/students/listAll','StudentsController@listAll');
@@ -158,6 +162,25 @@ Route::group( array('middleware'=>'web') ,function(){
     Route::post('/students/acYear/delete/{student}/{id}','StudentsController@acYearRemove');
     Route::post('/students/delete/{id}','StudentsController@delete');
 	Route::post('/students/{id}','StudentsController@edit');
+	
+	//Student Categories
+	Route::get('/student_categories','DashboardController@index');
+	Route::get('/student_categories/listAll','stdentCategoryController@listAll');
+	Route::post('/student_categories','stdentCategoryController@create');
+	Route::get('/student_categories/export/{type}','stdentCategoryController@export');
+	Route::get('/student_categories/{id}','stdentCategoryController@fetch');
+	Route::post('/student_categories/delete/{id}','stdentCategoryController@delete');
+	Route::post('/student_categories/{id}','stdentCategoryController@edit');
+
+	//Certificates
+	Route::get('/certificates','DashboardController@index');
+	Route::get('/certificates/listAll','certificatesController@listAll');
+	Route::post('/certificates','certificatesController@create');
+	Route::get('/certificates/download/{id}','certificatesController@download');
+	Route::get('/certificates/export/{type}','certificatesController@export');
+	Route::get('/certificates/{id}','certificatesController@fetch');
+	Route::post('/certificates/delete/{id}','certificatesController@delete');
+	Route::post('/certificates/{id}','certificatesController@edit');
 
 	//Parents
 	Route::get('/parents/search/{student}','ParentsController@searchStudents');
@@ -220,9 +243,29 @@ Route::group( array('middleware'=>'web') ,function(){
     Route::get('/library/download/{id}','LibraryController@download');
     Route::get('/library/search/{keyword}/{page}','LibraryController@search');
 	Route::post('/library','LibraryController@create');
+    Route::post('/library/members','LibraryController@library_members');
+    Route::post('/library/members_set','LibraryController@library_members_set');
 	Route::get('/library/{id}','LibraryController@fetch');
     Route::post('/library/delete/{id}','LibraryController@delete');
 	Route::post('/library/{id}','LibraryController@edit');
+
+	//Library Issue Book
+	Route::get('/library_issues','DashboardController@index');
+	Route::get('/library_issues/listAll','libraryIssuesControllers@listAll');
+	Route::get('/library_issues/listAll/{page}','libraryIssuesControllers@listAll');
+	Route::get('/library_issues/search/{keyword}/{page}','libraryIssuesControllers@search');
+	Route::post('/library_issues','libraryIssuesControllers@create');
+	Route::get('/library_issues/export/{type}','libraryIssuesControllers@export');
+	Route::get('/library_issues/searchUser/{keyword}','libraryIssuesControllers@searchUser');
+	Route::get('/library_issues/{id}','libraryIssuesControllers@fetch');
+	Route::post('/library_issues/delete/{id}','libraryIssuesControllers@delete');
+	Route::post('/library_issues/return/{id}','libraryIssuesControllers@book_return');
+	Route::post('/library_issues/{id}','libraryIssuesControllers@edit');
+
+	Route::get('/library_issues/listIssued','libraryIssuesControllers@listIssued');
+	Route::get('/library_issues/listIssued/{page}','libraryIssuesControllers@listIssued');
+	Route::get('/library_issues/searchIssued/{keyword}/{page}','libraryIssuesControllers@searchIssued');
+
 
 	//Account Settings
 	Route::get('/accountSettings','DashboardController@index');
@@ -255,6 +298,7 @@ Route::group( array('middleware'=>'web') ,function(){
     Route::get('/attendance','DashboardController@index');
 	Route::get('/attendance/data','AttendanceController@listAll');
 	Route::post('/attendance/list','AttendanceController@listAttendance');
+	Route::post('/attendance/report','AttendanceController@reportAttendance');
 	Route::post('/attendance','AttendanceController@saveAttendance');
 	Route::get('/attendance/stats','AttendanceController@getStats');
 	Route::post('/attendance/biometric','AttendanceController@biometric');
@@ -302,7 +346,8 @@ Route::group( array('middleware'=>'web') ,function(){
 
 	//Homework
 	Route::get('/homeworks','DashboardController@index');
-	Route::get('/homeworks/listAll','homeworksController@listAll');
+	Route::get('/homeworks/listAll/{page}','homeworksController@listAll');
+	Route::get('/homeworks/search/{keyword}/{page}','homeworksController@search');
 	Route::post('/homeworks','homeworksController@create');
     Route::get('/homeworks/download/{id}','homeworksController@download');
     Route::get('/homeworks/{id}','homeworksController@fetch');
@@ -353,7 +398,12 @@ Route::group( array('middleware'=>'web') ,function(){
 	//Online Exams
 	Route::get('/onlineExams','DashboardController@index');
 	Route::get('/onlineExams/listAll','OnlineExamsController@listAll');
-    Route::post('/onlineExams/uploadImage','OnlineExamsController@uploadImage');
+	Route::get('/onlineExams/questions','OnlineExamsController@questions');
+	Route::get('/onlineExams/questions/{id}','OnlineExamsController@fetchQuestions');
+	Route::get('/onlineExams/searchQuestion/{keyword}','OnlineExamsController@searchQuestion');
+	Route::post('/onlineExams/questions/{id}','OnlineExamsController@editQuestions');
+	Route::post('/onlineExams/questions/delete/{id}','OnlineExamsController@deleteQuestions');
+	Route::post('/onlineExams/questions','OnlineExamsController@createQuestions');
     Route::post('/onlineExams/take/{id}','OnlineExamsController@take');
 	Route::post('/onlineExams/took/{id}','OnlineExamsController@took');
 	Route::get('/onlineExams/marks/{id}','OnlineExamsController@marks');
@@ -366,11 +416,22 @@ Route::group( array('middleware'=>'web') ,function(){
 	//Transportation
 	Route::get('/transports','DashboardController@index');
 	Route::get('/transports/listAll','TransportsController@listAll');
-	Route::get('/transports/list/{id}','TransportsController@fetchSubs');
+	Route::get('/transports/members','TransportsController@members');
+	Route::post('/transports/members','TransportsController@getmembers');
 	Route::post('/transports','TransportsController@create');
 	Route::get('/transports/{id}','TransportsController@fetch');
     Route::post('/transports/delete/{id}','TransportsController@delete');
 	Route::post('/transports/{id}','TransportsController@edit');
+
+	//Transport Vehicles
+	Route::get('/transport_vehicles','DashboardController@index');
+	Route::get('/transport_vehicles/listAll','transportVehiclessController@listAll');
+	Route::post('/transport_vehicles','transportVehiclessController@create');
+	Route::get('/transport_vehicles/download/{id}','transportVehiclessController@download');
+	Route::get('/transport_vehicles/export/{type}','transportVehiclessController@export');
+	Route::get('/transport_vehicles/{id}','transportVehiclessController@fetch');
+	Route::post('/transport_vehicles/delete/{id}','transportVehiclessController@delete');
+	Route::post('/transport_vehicles/{id}','transportVehiclessController@edit');
 
 	//Media
 	Route::get('/media','DashboardController@index');
@@ -530,11 +591,14 @@ Route::group( array('middleware'=>'web') ,function(){
 	Route::get('/staffAttendance','DashboardController@index');
 	Route::post('/sattendance/list','SAttendanceController@listAttendance');
 	Route::post('/sattendance','SAttendanceController@saveAttendance');
+	Route::post('/sattendance/report','SAttendanceController@reportAttendance');
 
     //Reports
     Route::get('/reports','DashboardController@index');
     Route::post('/reports','reportsController@report');
     Route::get('/reports/preAttendace','reportsController@preAttendaceStats');
+    Route::get('/reports/preCert','reportsController@preCert');
+    Route::post('/reports/certGetStdList','reportsController@certGetStdList');
 
     //vacation
     Route::get('/vacation','vacationController@index');
@@ -542,6 +606,9 @@ Route::group( array('middleware'=>'web') ,function(){
     Route::post('/vacation','vacationController@getVacation');
     Route::post('/vacation/confirm','vacationController@saveVacation');
     Route::post('/vacation/delete/{id}','vacationController@delete');
+    Route::get('/vacation/approve','vacationController@get_approval');
+    Route::post('/vacation/approve','vacationController@set_approval');
+    Route::get('/vacation/mine','vacationController@my_vacations');
 
     //Hostel
 	Route::get('/hostel','DashboardController@index');
@@ -585,6 +652,7 @@ Route::group( array('middleware'=>'web') ,function(){
 	Route::get('/make_payment','DashboardController@index');
 	Route::post('/make_payment/search','make_paymentController@search_user');
 	Route::get('/make_payment/{id}','make_paymentController@get_user_details');
+	Route::post('/make_payment/delete/{id}','make_paymentController@make_user_payment_remove');
 	Route::post('/make_payment/{id}','make_paymentController@make_user_payment_submit');
 
 	//Backup & Restore
@@ -603,9 +671,185 @@ Route::group( array('middleware'=>'web') ,function(){
     Route::post('/frontend/delete/{id}','frontendController@delete');
     Route::post('/frontend/{id}','frontendController@edit');
 
-	//Frontend Website
+	//Biometric integration
 	Route::get('/biometric','biometricController@get_devices');
 	Route::post('/biometric','biometricController@sync_devices');
+
+	//Roles Permissions
+	Route::get('/roles','DashboardController@index');
+	Route::get('/roles/listAll','rolesController@listAll');
+	Route::post('/roles','rolesController@create');
+	Route::get('/roles/{id}','rolesController@fetch');
+	Route::post('/roles/delete/{id}','rolesController@delete');
+	Route::post('/roles/{id}','rolesController@edit');
+
+	//Welcome Office Categories
+	Route::get('/wel_office_cat','DashboardController@index');
+	Route::get('/wel_office_cat/listAll','welOfficeCatController@listAll');
+	Route::post('/wel_office_cat','welOfficeCatController@create');
+	Route::get('/wel_office_cat/{id}','welOfficeCatController@fetch');
+	Route::post('/wel_office_cat/delete/{id}','welOfficeCatController@delete');
+	Route::post('/wel_office_cat/{id}','welOfficeCatController@edit');
+
+	//Visitors
+	Route::get('/visitors','DashboardController@index');
+	Route::get('/visitors/listAll','visitorsController@listAll');
+	Route::get('/visitors/listAll/{page}','visitorsController@listAll');
+	Route::get('/visitors/search/{keyword}/{page}','visitorsController@search');
+	Route::post('/visitors','visitorsController@create');
+	Route::get('/visitors/view/{id}','visitorsController@view');
+	Route::get('/visitors/download/{id}','visitorsController@download');
+	Route::get('/visitors/export/{type}','visitorsController@export');
+	Route::get('/visitors/searchUser/{keyword}','visitorsController@searchUser');
+	Route::get('/visitors/{id}','visitorsController@fetch');
+	Route::post('/visitors/delete/{id}','visitorsController@delete');
+	Route::post('/visitors/checkout/{id}','visitorsController@checkout');
+	Route::post('/visitors/{id}','visitorsController@edit');
+	
+	//Phone Calls
+	Route::get('/phone_calls','DashboardController@index');
+	Route::get('/phone_calls/listAll','phoneCallsControllers@listAll');
+	Route::get('/phone_calls/listAll/{page}','phoneCallsControllers@listAll');
+	Route::get('/phone_calls/search/{keyword}/{page}','phoneCallsControllers@search');
+	Route::post('/phone_calls','phoneCallsControllers@create');
+	Route::get('/phone_calls/export/{type}','phoneCallsControllers@export');
+	Route::get('/phone_calls/{id}','phoneCallsControllers@fetch');
+	Route::post('/phone_calls/delete/{id}','phoneCallsControllers@delete');
+	Route::post('/phone_calls/{id}','phoneCallsControllers@edit');
+
+	//Postal
+	Route::get('/postal','DashboardController@index');
+	Route::get('/postal/listAll','postalController@listAll');
+	Route::get('/postal/listAll/{page}','postalController@listAll');
+	Route::get('/postal/search/{keyword}/{page}','postalController@search');
+	Route::post('/postal','postalController@create');
+	Route::get('/postal/download/{id}','postalController@download');
+	Route::get('/postal/export/{type}','postalController@export');
+	Route::get('/postal/{id}','postalController@fetch');
+	Route::post('/postal/delete/{id}','postalController@delete');
+	Route::post('/postal/{id}','postalController@edit');
+
+	//Contact Messages
+	Route::get('/con_mess','DashboardController@index');
+	Route::get('/con_mess/listAll','conMessController@listAll');
+	Route::get('/con_mess/listAll/{page}','conMessController@listAll');
+	Route::get('/con_mess/search/{keyword}/{page}','conMessController@search');
+	Route::get('/con_mess/view/{id}','conMessController@view');
+	Route::get('/con_mess/export/{type}','conMessController@export');
+	Route::post('/con_mess/delete/{id}','conMessController@delete');
+
+	//Departments
+	Route::get('/departments','DashboardController@index');
+	Route::get('/departments/listAll','departmentsControllers@listAll');
+	Route::post('/departments','departmentsControllers@create');
+	Route::get('/departments/{id}','departmentsControllers@fetch');
+	Route::post('/departments/delete/{id}','departmentsControllers@delete');
+	Route::post('/departments/{id}','departmentsControllers@edit');
+
+	//Designations
+	Route::get('/designations','DashboardController@index');
+	Route::get('/designations/listAll','designationsController@listAll');
+	Route::post('/designations','designationsController@create');
+	Route::get('/designations/export/{type}','designationsController@export');
+	Route::get('/designations/{id}','designationsController@fetch');
+	Route::post('/designations/delete/{id}','designationsController@delete');
+	Route::post('/designations/{id}','designationsController@edit');
+
+	//Enquiries
+	Route::get('/enquiries','DashboardController@index');
+	Route::get('/enquiries/listAll','enquiriesController@listAll');
+	Route::get('/enquiries/listAll/{page}','enquiriesController@listAll');
+	Route::get('/enquiries/search/{keyword}/{page}','enquiriesController@search');
+	Route::post('/enquiries','enquiriesController@create');
+	Route::get('/enquiries/view/{id}','enquiriesController@view');
+	Route::get('/enquiries/download/{id}','enquiriesController@download');
+	Route::get('/enquiries/export/{type}','enquiriesController@export');
+	Route::get('/enquiries/{id}','enquiriesController@fetch');
+	Route::post('/enquiries/delete/{id}','enquiriesController@delete');
+	Route::post('/enquiries/{id}','enquiriesController@edit');
+
+	//Complaints
+	Route::get('/complaints','DashboardController@index');
+	Route::get('/complaints/listAll','complaintsController@listAll');
+	Route::get('/complaints/listAll/{page}','complaintsController@listAll');
+	Route::get('/complaints/search/{keyword}/{page}','complaintsController@search');
+	Route::post('/complaints','complaintsController@create');
+	Route::get('/complaints/view/{id}','complaintsController@view');
+	Route::get('/complaints/download/{id}','complaintsController@download');
+	Route::get('/complaints/export/{type}','complaintsController@export');
+	Route::get('/complaints/{id}','complaintsController@fetch');
+	Route::post('/complaints/delete/{id}','complaintsController@delete');
+	Route::post('/complaints/{id}','complaintsController@edit');
+
+
+	//Inventory Categories
+	Route::get('/inv_cat','DashboardController@index');
+	Route::get('/inv_cat/listAll','invCatController@listAll');
+	Route::post('/inv_cat','invCatController@create');
+	Route::get('/inv_cat/{id}','invCatController@fetch');
+	Route::post('/inv_cat/delete/{id}','invCatController@delete');
+	Route::post('/inv_cat/{id}','invCatController@edit');
+
+	//Inventory Suppliers
+	Route::get('/suppliers','DashboardController@index');
+	Route::get('/suppliers/listAll','suppliersControllers@listAll');
+	Route::get('/suppliers/listAll/{page}','suppliersControllers@listAll');
+	Route::get('/suppliers/search/{keyword}/{page}','suppliersControllers@search');
+	Route::post('/suppliers','suppliersControllers@create');
+	Route::get('/suppliers/export/{type}','suppliersControllers@export');
+	Route::get('/suppliers/{id}','suppliersControllers@fetch');
+	Route::post('/suppliers/active/{id}','suppliersControllers@active');
+	Route::post('/suppliers/delete/{id}','suppliersControllers@delete');
+	Route::post('/suppliers/{id}','suppliersControllers@edit');
+
+	//Inventory Stores
+	Route::get('/stores','DashboardController@index');
+	Route::get('/stores/listAll','storesController@listAll');
+	Route::post('/stores','storesController@create');
+	Route::get('/stores/{id}','storesController@fetch');
+	Route::post('/stores/delete/{id}','storesController@delete');
+	Route::post('/stores/{id}','storesController@edit');
+
+	//Inventory Items
+	Route::get('/items_code','DashboardController@index');
+	Route::get('/items_code/listAll','itemsCodeController@listAll');
+	Route::get('/items_code/listAll/{page}','itemsCodeController@listAll');
+	Route::get('/items_code/search/{keyword}/{page}','itemsCodeController@search');
+	Route::post('/items_code','itemsCodeController@create');
+	Route::get('/items_code/export/{type}','itemsCodeController@export');
+	Route::get('/items_code/{id}','itemsCodeController@fetch');
+	Route::post('/items_code/delete/{id}','itemsCodeController@delete');
+	Route::post('/items_code/{id}','itemsCodeController@edit');
+
+	//Items Stock
+	Route::get('/items_stock','DashboardController@index');
+	Route::get('/items_stock/listAll','itemsStockController@listAll');
+	Route::get('/items_stock/listAll/{page}','itemsStockController@listAll');
+	Route::get('/items_stock/search/{keyword}/{page}','itemsStockController@search');
+	Route::post('/items_stock','itemsStockController@create');
+	Route::post('/items_stock/load_items/{cat_id}','itemsStockController@load_items');
+	Route::get('/items_stock/download/{id}','itemsStockController@download');
+	Route::get('/items_stock/export/{type}','itemsStockController@export');
+	Route::get('/items_stock/{id}','itemsStockController@fetch');
+	Route::post('/items_stock/delete/{id}','itemsStockController@delete');
+	Route::post('/items_stock/{id}','itemsStockController@edit');
+
+	//Inventory Issue/Return
+	Route::get('/inv_issue','DashboardController@index');
+	Route::get('/inv_issue/listAll','inv_issueController@listAll');
+	Route::get('/inv_issue/listAll/{page}','inv_issueController@listAll');
+	Route::get('/inv_issue/search/{keyword}/{page}','inv_issueController@search');
+	Route::post('/inv_issue','inv_issueController@create');
+	Route::post('/inv_issue/load_items/{cat_id}','inv_issueController@load_items');
+	Route::post('/inv_issue/return/{id}','inv_issueController@return_item');
+	Route::get('/inv_issue/download/{id}','inv_issueController@download');
+	Route::get('/inv_issue/export/{type}','inv_issueController@export');
+	Route::get('/inv_issue/searchUser/{keyword}','inv_issueController@searchUser');
+	Route::get('/inv_issue/{id}','inv_issueController@fetch');
+	Route::post('/inv_issue/delete/{id}','inv_issueController@delete');
+	Route::post('/inv_issue/{id}','inv_issueController@edit');
+
+	Route::post('/licenseUpdater','LicenseController@update');
 });
 Route::post('/invoices/success/{id}','invoicesController@paymentSuccess');
 

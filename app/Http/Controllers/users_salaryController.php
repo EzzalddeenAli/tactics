@@ -8,7 +8,7 @@ class users_salaryController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,9 +21,8 @@ class users_salaryController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "account") exit;
-
-		if(!$this->panelInit->hasThePerm('payroll')){
+		
+		if(!$this->panelInit->can( array('Payroll.userSalary') )){
 			exit;
 		}
 	}

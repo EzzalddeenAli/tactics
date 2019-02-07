@@ -8,7 +8,7 @@ class academicYearController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -20,19 +20,23 @@ class academicYearController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
-
-		if(!$this->panelInit->hasThePerm('academicyears')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+		if(!$this->panelInit->can( array('academicyears.list','academicyears.addAcademicyear','academicyears.editAcademicYears','academicyears.delAcademicYears') )){
+			exit;
+		}
+
 		return \academic_year::get()->toArray();
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can('academicyears.delAcademicYears')){
+			exit;
+		}
+
         if ( $postDelete = \academic_year::where('id', $id)->first() )
         {
             if($postDelete->isDefault == 1){
@@ -46,6 +50,11 @@ class academicYearController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can('academicyears.addAcademicyear')){
+			exit;
+		}
+
         if(\Input::has('isDefault') AND \Input::get('isDefault') == 1){
             \DB::table('academic_year')->update(array('isDefault' => 0));
             $isDefault = 1;
@@ -66,11 +75,20 @@ class academicYearController extends Controller {
 	}
 
 	function fetch($id){
+		if(!$this->panelInit->can('academicyears.editAcademicYears')){
+			exit;
+		}
+		
 		$academicYear = \academic_year::where('id',$id)->first()->toArray();
 		return $academicYear;
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can('academicyears.editAcademicYears')){
+			exit;
+		}
+
 		$academicYear = \academic_year::find($id);
 		$academicYear->yearTitle = \Input::get('yearTitle');
 		$academicYear->save();
@@ -79,6 +97,11 @@ class academicYearController extends Controller {
 	}
 
     function active($id){
+
+    	if(!$this->panelInit->can('academicyears.editAcademicYears')){
+			exit;
+		}
+
         \DB::table('academic_year')->update(array('isDefault' => 0));
 
         $academicYear = \academic_year::find($id);

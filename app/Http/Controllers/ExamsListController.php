@@ -8,7 +8,7 @@ class ExamsListController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,13 +22,16 @@ class ExamsListController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('examsList')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("examsList.list","examsList.View","examsList.addExam","examsList.editExam","examsList.delExam","examsList.examDetailsNot","examsList.showMarks","examsList.controlMarksExam") )){
+			exit;
+		}
+		
+
 		$toReturn['exams'] = array();
 		if($this->data['users']->role == "student"){
 			$toReturn['exams'] = \exams_list::where('examAcYear',$this->panelInit->selectAcYear)->where('examClasses','LIKE','%"'.$this->data['users']->studentClass.'"%')->get()->toArray();
@@ -81,7 +84,11 @@ class ExamsListController extends Controller {
 	}
 
 	public function delete($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "examsList.delExam" )){
+			exit;
+		}
+
 		if ( $postDelete = \exams_list::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -92,7 +99,11 @@ class ExamsListController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "examsList.addExam" )){
+			exit;
+		}
+
 		$examsList = new \exams_list();
 		$examsList->examTitle = \Input::get('examTitle');
 		$examsList->examDescription = \Input::get('examDescription');
@@ -136,6 +147,11 @@ class ExamsListController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( array("examsList.View","examsList.editExam") )){
+			exit;
+		}
+
 		$exams_list = \exams_list::where('id',$id)->first()->toArray();
 		$exams_list['examDate'] = $this->panelInit->unix_to_date($exams_list['examDate']);
 		$exams_list['examEndDate'] = $this->panelInit->unix_to_date($exams_list['examEndDate']);
@@ -159,7 +175,11 @@ class ExamsListController extends Controller {
 	}
 
 	function edit($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "examsList.editExam" )){
+			exit;
+		}
+
 		$examsList = \exams_list::find($id);
 		$examsList->examTitle = \Input::get('examTitle');
 		$examsList->examDescription = \Input::get('examDescription');
@@ -187,7 +207,11 @@ class ExamsListController extends Controller {
 	}
 
 	function fetchMarks(){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( array("examsList.showMarks","examsList.controlMarksExam") )){
+			exit;
+		}
+
 		$toReturn = array();
 
 		$toReturn['exam'] = \exams_list::where('id',\Input::get('exam'))->first()->toArray();
@@ -232,7 +256,10 @@ class ExamsListController extends Controller {
 	}
 
 	function saveMarks($exam,$class,$subject){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "examsList.controlMarksExam" )){
+			exit;
+		}
 
 		$studentList = array();
 		$studentArray = \User::where('role','student')->where('studentClass',$class)->get();
@@ -283,12 +310,17 @@ class ExamsListController extends Controller {
 	}
 
 	function notifications($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "examsList.examDetailsNot" )){
+			exit;
+		}
+
 		if($this->panelInit->settingsArray['examDetailsNotif'] == "0"){
 			return json_encode(array("jsTitle"=>$this->panelInit->language['examDetailsNot'],"jsMessage"=>$this->panelInit->language['adjustExamNot'] ));
 		}
 
-		$examsList = \exams_list::where('id',$id)->first();
+		$examsList = \exams_list::where('id',$id)->first()->toArray();
+		$examsList['examMarksheetColumns'] = json_decode($examsList['examMarksheetColumns'],true);
 
 		$subjectArray = array();
 		$subject = \subject::get();
@@ -329,7 +361,8 @@ class ExamsListController extends Controller {
 				$return['marks'][$value->studentId] = array();
 			}
 			if(isset($subjectArray[$value->subjectId])){
-				$return['marks'][$value->studentId][ $subjectArray[$value->subjectId] ] = array("examMark"=>$value->examMark,"attendanceMark"=>$value->attendanceMark,"markComments"=>$value->markComments);
+				$value->examMark = json_decode($value->examMark,true);
+				$return['marks'][$value->studentId][ $subjectArray[$value->subjectId] ] = array("examMark"=>$value->examMark,"totalMarks"=>$value->totalMarks,"markComments"=>$value->markComments);
 			}
 		}
 
@@ -350,17 +383,29 @@ class ExamsListController extends Controller {
 				$studentTemplate = $mailTemplate->templateMail;
 				$examGradesTable = "";
 				foreach($value as $keyG => $valueG){
-					if($valueG['examMark'] == "" AND $valueG['attendanceMark'] == ""){
+					if( (!is_array($valueG['examMark']) || (is_array($valueG['examMark']) AND count($valueG['examMark']) == 0) ) AND $valueG['totalMarks'] == ""){
 						continue;
 					}
-					$examGradesTable .= $keyG. " Grade : ".$valueG['examMark']." - Attendance : ".$valueG['attendanceMark']." - Comments : ".$valueG['markComments']."<br/>";
+					$examGradesTable .= $keyG . " => ";
+
+					if(is_array($examsList['examMarksheetColumns'])){
+						reset($examsList['examMarksheetColumns']);
+						foreach ($examsList['examMarksheetColumns'] as $key_ => $value_) {
+							if(isset($valueG['examMark'][$value_['id']])){
+								$examGradesTable .= $value_['title']." : ".$valueG['examMark'][$value_['id']]. " - ";							
+							}
+						}
+					}
+
+					$examGradesTable .= " - Total Marks : ".$valueG['totalMarks']." - Comments : ".$valueG['markComments']."<br/>";
 				}
 				if($examGradesTable == ""){
 					continue;
 				}
 				$searchArray = array("{studentName}","{studentRoll}","{studentEmail}","{studentUsername}","{examTitle}","{examDescription}","{examDate}","{schoolTitle}","{examGradesTable}");
-				$replaceArray = array($usersArray[$key]['student']['fullName'],$usersArray[$key]['student']['studentRollId'],$usersArray[$key]['student']['email'],$usersArray[$key]['student']['username'],$examsList->examTitle,$examsList->examDescription,$this->panelInit->unix_to_date($examsList->examDate),$this->panelInit->settingsArray['siteTitle'],$examGradesTable);
+				$replaceArray = array($usersArray[$key]['student']['fullName'],$usersArray[$key]['student']['studentRollId'],$usersArray[$key]['student']['email'],$usersArray[$key]['student']['username'],$examsList['examTitle'],$examsList['examDescription'],$this->panelInit->unix_to_date($examsList['examDate']),$this->panelInit->settingsArray['siteTitle'],$examGradesTable);
 				$studentTemplate = str_replace($searchArray, $replaceArray, $studentTemplate);
+
 				if (strpos($usersArray[$key]['student']['comVia'], 'mail') !== false) {
 					$MailSmsHandler->mail($usersArray[$key]['student']['email'],"Exam grade details",$studentTemplate,$usersArray[$key]['student']['fullName']);
 				}
@@ -377,16 +422,27 @@ class ExamsListController extends Controller {
 			$examGradesTable = "";
 			reset($value);
 			foreach($value as $keyG => $valueG){
-				if($valueG['examMark'] == "" AND $valueG['attendanceMark'] == ""){
-					continue;
-				}
-				$examGradesTable .= $keyG. " Grade : ".$valueG['examMark']." - Attendance : ".$valueG['attendanceMark']." ";
+				if( (!is_array($valueG['examMark']) || (is_array($valueG['examMark']) AND count($valueG['examMark']) == 0) ) AND $valueG['totalMarks'] == ""){
+						continue;
+					}
+					$examGradesTable .= $keyG . " => ";
+
+					if(is_array($examsList['examMarksheetColumns'])){
+						reset($examsList['examMarksheetColumns']);
+						foreach ($examsList['examMarksheetColumns'] as $key_ => $value_) {
+							if(isset($valueG['examMark'][$value_['id']])){
+								$examGradesTable .= $value_['title']." : ".$valueG['examMark'][$value_['id']]. " - ";							
+							}
+						}
+					}
+
+					$examGradesTable .= " - Total Marks : ".$valueG['totalMarks']." - Comments : ".$valueG['markComments']."<br/>";
 			}
 			if($examGradesTable == ""){
 				continue;
 			}
 			$searchArray = array("{studentName}","{studentRoll}","{studentEmail}","{studentUsername}","{examTitle}","{examDescription}","{examDate}","{schoolTitle}","{examGradesTable}");
-			$replaceArray = array($usersArray[$key]['student']['fullName'],$usersArray[$key]['student']['studentRollId'],$usersArray[$key]['student']['email'],$usersArray[$key]['student']['username'],$examsList->examTitle,$examsList->examDescription,$this->panelInit->unix_to_date($examsList->examDate),$this->panelInit->settingsArray['siteTitle'],$examGradesTable);
+			$replaceArray = array($usersArray[$key]['student']['fullName'],$usersArray[$key]['student']['studentRollId'],$usersArray[$key]['student']['email'],$usersArray[$key]['student']['username'],$examsList['examTitle'],$examsList['examDescription'],$this->panelInit->unix_to_date($examsList['examDate']),$this->panelInit->settingsArray['siteTitle'],$examGradesTable);
 			$studentTemplate = str_replace($searchArray, $replaceArray, $studentTemplate);
 
 			if(isset($sms) AND $usersArray[$key]['student']['mobileNo'] != "" AND strpos($usersArray[$key]['student']['comVia'], 'sms') !== false){

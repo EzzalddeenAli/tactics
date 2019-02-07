@@ -79,7 +79,7 @@
 
                     <div class="row">
                         <div class="col-3" style="text-align: center;">
-                            <img alt="{{user_data.user.fullName}}" class="user-image img-circle img-responsive" style="padding:10px;" ng-src="{{'index.php/dashboard/profileImage/'+user_data.user.id}}">
+                            <img alt="{{user_data.user.fullName}}" class="user-image img-circle img-responsive" style="padding:10px;width: 140px;height: 140px;" ng-src="{{'index.php/dashboard/profileImage/'+user_data.user.id}}">
                             <br/>
                             <a href="" ng-click="teacherProfile( user_data.user.id )">{{user_data.user.fullName}}</a>
                         </div>
@@ -133,6 +133,7 @@
                                 <th>{{phrase.Amount}}</th>
                                 <th>{{phrase.method}}</th>
                                 <th>{{phrase.Comments}}</th>
+                                <th ng-show="$root.can('Payroll.delUsrPayment')">{{phrase.Remove}}</th>
                             </tr>
                             <tr ng-repeat="hist in user_data.history">
                                 <td>
@@ -150,6 +151,9 @@
                                 <td>{{currency_symbol}}{{hist.pay_amount}}</td>
                                 <td>{{hist.pay_method}}</td>
                                 <td>{{hist.pay_comments}}</td>
+                                <th ng-show="$root.can('Payroll.delUsrPayment')">
+                                    <button ng-show="$root.can('Payroll.delUsrPayment')" ng-click="remove(hist,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                </th>
                             </tr>
                             <tr ng-show="!user_data.history.length"><td class="noTableData" colspan="6">{{phrase.noDataAvailable}}</td></tr>
                         </tbody>

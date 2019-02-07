@@ -8,7 +8,7 @@ class NewsBoardController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,19 +22,21 @@ class NewsBoardController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('newsboard')){
-			exit;
-		}
 	}
 
 	public function listAll($page = 1)
 	{
+
+		if(!$this->panelInit->can( array("newsboard.list","newsboard.View","newsboard.addNews","newsboard.editNews","newsboard.delNews") )){
+			exit;
+		}
+
 		$toReturn = array();
 		if($this->data['users']->role == "admin" ){
-			$toReturn['newsboard'] = \newsboard::orderby('id','DESC')->take('20')->skip(20* ($page - 1) )->get()->toArray();
+			$toReturn['newsboard'] = \newsboard::orderby('newsDate','DESC')->take('20')->skip(20* ($page - 1) )->get()->toArray();
 			$toReturn['totalItems'] = \newsboard::count();
 		}else{
-			 $toReturn['newsboard'] = \newsboard::where('newsFor',$this->data['users']->role)->orWhere('newsFor','all')->orderby('id','DESC')->take('20')->skip(20* ($page - 1) )->get()->toArray();
+			 $toReturn['newsboard'] = \newsboard::where('newsFor',$this->data['users']->role)->orWhere('newsFor','all')->orderby('newsDate','DESC')->take('20')->skip(20* ($page - 1) )->get()->toArray();
 			 $toReturn['totalItems'] = \newsboard::where('newsFor',$this->data['users']->role)->orWhere('newsFor','all')->count();
 		}
 
@@ -43,13 +45,16 @@ class NewsBoardController extends Controller {
 			$toReturn['newsboard'][$key]['newsDate'] = $this->panelInit->unix_to_date($toReturn['newsboard'][$key]['newsDate']);
 		}
 
-		$toReturn['userRole'] = $this->data['users']->role;
-
 		return $toReturn;
 	}
 
 	public function search($keyword,$page = 1)
 	{
+		
+		if(!$this->panelInit->can( array("newsboard.View","newsboard.addNews","newsboard.editNews","newsboard.delNews") )){
+			exit;
+		}
+
 		$toReturn = array();
 		if($this->data['users']->role == "admin" ){
 			$toReturn['newsboard'] = \newsboard::where('newsTitle','like','%'.$keyword.'%')->orWhere('newsText','like','%'.$keyword.'%')->take('20')->skip(20* ($page - 1) )->get()->toArray();
@@ -64,12 +69,15 @@ class NewsBoardController extends Controller {
 			$toReturn['newsboard'][$key]['newsDate'] = $this->panelInit->unix_to_date($toReturn['newsboard'][$key]['newsDate']);
 		}
 
-		$toReturn['userRole'] = $this->data['users']->role;
-
 		return $toReturn;
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "newsboard.delNews" )){
+			exit;
+		}
+
 		if ( $postDelete = \newsboard::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -80,7 +88,11 @@ class NewsBoardController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role != "admin") exit;
+		
+		if(!$this->panelInit->can( "newsboard.addNews" )){
+			exit;
+		}
+
 		$newsboard = new \newsboard();
 		$newsboard->newsTitle = \Input::get('newsTitle');
 		$newsboard->newsText = htmlspecialchars(\Input::get('newsText'),ENT_QUOTES);
@@ -91,6 +103,11 @@ class NewsBoardController extends Controller {
 
 		if (\Input::hasFile('newsImage')) {
 			$fileInstance = \Input::file('newsImage');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addNews'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/news/',$newFileName);
 
@@ -123,6 +140,11 @@ class NewsBoardController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( array("newsboard.View","newsboard.editNews") )){
+			exit;
+		}
+
 		$data = \newsboard::where('id',$id)->first()->toArray();
 		$data['newsText'] = htmlspecialchars_decode($data['newsText'],ENT_QUOTES);
 		$data['newsDate'] = $this->panelInit->unix_to_date($data['newsDate']);
@@ -130,7 +152,11 @@ class NewsBoardController extends Controller {
 	}
 
 	function edit($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "newsboard.editNews" )){
+			exit;
+		}
+
 		$newsboard = \newsboard::find($id);
 		$newsboard->newsTitle = \Input::get('newsTitle');
 		$newsboard->newsText = htmlspecialchars(\Input::get('newsText'),ENT_QUOTES);
@@ -140,6 +166,11 @@ class NewsBoardController extends Controller {
 
 		if (\Input::hasFile('newsImage')) {
 			$fileInstance = \Input::file('newsImage');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editNews'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
 			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/news/',$newFileName);
 
@@ -154,7 +185,11 @@ class NewsBoardController extends Controller {
 	}
 
 	function fe_active($id){
-		if($this->data['users']->role != "admin") exit;
+		
+		if(!$this->panelInit->can( "newsboard.editNews" )){
+			exit;
+		}
+		
 		$newsboard = \newsboard::find($id);
 		
 		if($newsboard->fe_active == 1){

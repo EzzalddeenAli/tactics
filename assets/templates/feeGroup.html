@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addFeeGroup}}</button>
+                <button ng-show="$root.can('FeeGroups.addFeeGroup')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addFeeGroup}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
@@ -27,15 +27,15 @@
                                 <th>{{phrase.groupTitle}}</th>
                                 <th>{{phrase.invPrefix}}</th>
                                 <th>{{phrase.groupDesc}}</th>
-                                <th>{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('FeeGroups.editFeeGroup') || $root.can('FeeGroups.delFeeGroup')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="group in feeGroups | filter:searchText">
                                 <td>{{group.group_title}}</td>
                                 <td>{{group.invoice_prefix}}</td>
                                 <td>{{group.group_description}}</td>
-                                <td>
-                                    <button ng-click="edit(group.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(group,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('FeeGroups.editFeeGroup') || $root.can('FeeGroups.delFeeGroup')">
+                                    <button ng-show="$root.can('FeeGroups.editFeeGroup')" ng-click="edit(group.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('FeeGroups.delFeeGroup')" ng-click="remove(group,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!feeGroups.length"><td class="noTableData" colspan="4">{{phrade.noGroups}}</td></tr>

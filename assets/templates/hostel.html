@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.AddHostel}}</button>
+                <button ng-show="$root.can('Hostel.AddHostel')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.AddHostel}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control input-sm">
@@ -28,17 +28,21 @@
                                 <th>{{phrase.Hosteltype}}</th>
                                 <th>{{phrase.Address}}</th>
                                 <th>{{phrase.Manager}}</th>
-                                <th>{{phrase.Operations}}</th>
+                                <th>{{phrase.managerContact}}</th>
+                                <th ng-show="$root.can('Hostel.listSubs') || $root.can('Hostel.EditHostel') || $root.can('Hostel.delHostel')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="hostel in hostelList | filter:searchText">
                                 <td>{{hostel.hostelTitle}}</td>
                                 <td>{{hostel.hostelType}}</td>
                                 <td>{{hostel.hostelAddress}}</td>
-                                <td>{{hostel.hostelManager}}</td>
                                 <td>
-                                    <button ng-click="listSub(hostel.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.listSubs}}" tooltip><i class="fa fa-list"></i></button>
-                                    <button ng-click="edit(hostel.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(hostel,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                    <span class="list_user_item"><img class="user-image img-circle" ng-show="hostel.managerPhoto != ''" style="width:35px; height:35px;" ng-src="{{'uploads/hostel/'+hostel.managerPhoto}}">{{hostel.hostelManager}}<br/></span>
+                                </td>
+                                <td>{{hostel.managerContact}}</td>
+                                <td ng-show="$root.can('Hostel.listSubs') || $root.can('Hostel.EditHostel') || $root.can('Hostel.delHostel')">
+                                    <button ng-show="$root.can('Hostel.listSubs')" ng-click="listSub(hostel.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.listSubs}}" tooltip><i class="fa fa-list"></i></button>
+                                    <button ng-show="$root.can('Hostel.EditHostel')" ng-click="edit(hostel.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('Hostel.delHostel')" ng-click="remove(hostel,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!hostelList.length"><td class="noTableData" colspan="6">{{phrase.noHostel}}</td></tr>
@@ -85,7 +89,19 @@
                         <div class="form-group row">
                             <label class="col-sm-2 text-right control-label col-form-label">{{phrase.Manager}}</label>
                             <div class="col-sm-10">
-                                <textarea name="hostelManager" class="form-control" ng-model="form.hostelManager" placeholder="{{phrase.Manager}}"></textarea>
+                                <input type="text" name="hostelManager" ng-model="form.hostelManager" class="form-control" required placeholder="{{phrase.Manager}}">
+                            </div>
+                        </div>
+                        <div class="form-group row" >
+                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.managerPhoto}} </label>
+                            <div class="col-sm-10">
+                                <input type="file" name="managerPhoto" file-model="form.managerPhoto">
+                            </div>
+                        </div>
+                        <div class="form-group row" >
+                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.managerContact}} </label>
+                            <div class="col-sm-10">
+                                <textarea name="managerContact" class="form-control" ng-model="form.managerContact" placeholder="{{phrase.managerContact}}" ></textarea>
                             </div>
                         </div>
                         <div class="form-group row">
@@ -141,7 +157,19 @@
                         <div class="form-group row">
                             <label class="col-sm-2 text-right control-label col-form-label">{{phrase.Manager}}</label>
                             <div class="col-sm-10">
-                                <textarea name="hostelManager" class="form-control" ng-model="form.hostelManager" placeholder="{{phrase.Manager}}"></textarea>
+                                <input type="text" name="hostelManager" ng-model="form.hostelManager" class="form-control" required placeholder="{{phrase.Manager}}">
+                            </div>
+                        </div>
+                        <div class="form-group row" >
+                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.managerPhoto}} </label>
+                            <div class="col-sm-10">
+                                <input type="file" name="managerPhoto" file-model="form.managerPhoto">
+                            </div>
+                        </div>
+                        <div class="form-group row" >
+                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.managerContact}} </label>
+                            <div class="col-sm-10">
+                                <textarea name="managerContact" class="form-control" ng-model="form.managerContact" placeholder="{{phrase.managerContact}}" ></textarea>
                             </div>
                         </div>
                         <div class="form-group row">

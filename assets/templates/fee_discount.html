@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addFeeDiscount}}</button>
+                <button ng-show="$root.can('FeeDiscount.addFeeDiscount')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addFeeDiscount}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
@@ -28,17 +28,17 @@
                                 <th>{{phrase.Description}}</th>
                                 <th>{{phrase.discCode}}</th>
                                 <th>{{phrase.discTypVal}}</th>
-                                <th>{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('FeeDiscount.assignUser') || $root.can('FeeDiscount.editFeeDiscount') || $root.can('FeeDiscount.delFeeDiscount')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="discount in feeDiscount | filter:searchText">
                                 <td>{{discount.discount_name}}</td>
                                 <td>{{discount.dicount_description}}</td>
                                 <td>{{discount.discount_code}}</td>
                                 <td>{{discount.discount_type}}/{{discount.discount_value}}</td>
-                                <td>
-                                    <button ng-click="ctrl_assignment(discount.id)" type="button" class="btn btn-success btn-circle" title="{{phrase.assignUser}}" tooltip><i class="fa fa-search"></i></button>
-                                    <button ng-click="edit(discount.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(discount,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('FeeDiscount.assignUser') || $root.can('FeeDiscount.editFeeDiscount') || $root.can('FeeDiscount.delFeeDiscount')">
+                                    <button ng-show="$root.can('FeeDiscount.assignUser')" ng-click="ctrl_assignment(discount.id)" type="button" class="btn btn-success btn-circle" title="{{phrase.assignUser}}" tooltip><i class="fa fa-search"></i></button>
+                                    <button ng-show="$root.can('FeeDiscount.editFeeDiscount')" ng-click="edit(discount.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('FeeDiscount.delFeeDiscount')" ng-click="remove(discount,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!feeDiscount.length"><td class="noTableData" colspan="5">No fee discount available</td></tr>

@@ -4,8 +4,8 @@
     </div>
     <div class="col-md-6 col-4 align-self-center">
         <button class="btn pull-right btn-info card-block-input-item" ng-show="views.list && dirParent != -1" ng-click="loadAlbum(dirParent)"><i class="mdi mdi-plus-circle"></i> {{phrase.goUp}}</button>
-        <button class="btn pull-right btn-success card-block-input-item" ng-show="views.list" ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="changeView('addMedia')"><i class="mdi mdi-plus-circle"></i> {{phrase.uploadMedia}}</button>
-        <button class="btn pull-right btn-success card-block-input-item" ng-show="views.list" ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="changeView('addAlbum')"><i class="mdi mdi-plus-circle"></i> {{phrase.addAlbum}}</button>
+        <button class="btn pull-right btn-success card-block-input-item" ng-show="$root.can('mediaCenter.addMedia') && views.list" ng-click="changeView('addMedia')"><i class="mdi mdi-plus-circle"></i> {{phrase.uploadMedia}}</button>
+        <button class="btn pull-right btn-success card-block-input-item" ng-show="$root.can('mediaCenter.addAlbum') && views.list" ng-click="changeView('addAlbum')"><i class="mdi mdi-plus-circle"></i> {{phrase.addAlbum}}</button>
     </div>
 </div>
 
@@ -24,8 +24,8 @@
                     <div class="el-overlay">
                         <ul class="el-info">
                             <li><a ng-click="loadAlbum(album.id)" class="btn default btn-outline" href="javascript:void(0);"><i class="icon-magnifier"></i></a></li>
-                            <li ng-if="userRole == 'admin' || userRole == 'teacher'"><a ng-click="editAlbumData(album.id)" title="{{phrase.Edit}}" tooltip class="btn default btn-outline" href="javascript:void(0);"><i class="icon-pencil"></i></a></li>
-                            <li ng-if="userRole == 'admin' || userRole == 'teacher'"><a ng-click="removeAlbum(album,$index)" title="{{phrase.Remove}}" tooltip class="btn default btn-outline" href="javascript:void(0);"><i class="icon-trash"></i></a></li>
+                            <li ng-show="$root.can('mediaCenter.editAlbum')"><a ng-click="editAlbumData(album.id)" title="{{phrase.Edit}}" tooltip class="btn default btn-outline" href="javascript:void(0);"><i class="icon-pencil"></i></a></li>
+                            <li ng-show="$root.can('mediaCenter.delAlbum')"><a ng-click="removeAlbum(album,$index)" title="{{phrase.Remove}}" tooltip class="btn default btn-outline" href="javascript:void(0);"><i class="icon-trash"></i></a></li>
                         </ul>
                     </div>
                 </div>
@@ -50,10 +50,10 @@
                     <div class="el-overlay">
                         <ul class="el-info">
                             <li ng-if="item.mediaType == '0'"><a colorbox="{transition:'elastic'}" title="{{item.mediaDescription}}" class="btn default btn-outline" href="uploads/media/{{item.mediaURL}}"><i class="icon-magnifier"></i></a></li>
-                            <li ng-if="item.mediaType == '1'"><a colorbox="{transition:'elastic'}" class="btn default btn-outline" youtube="true" title="{{item.mediaDescription}}" href="http://www.youtube.com/embed/{{item.v}}?rel=0&amp;wmode=transparent"><i class="icon-magnifier"></i></a></li>
-                            <li ng-if="item.mediaType == '2'"><a colorbox="{transition:'elastic'}" class="btn default btn-outline" vimeo="true" title="{{item.mediaDescription}}" href="http://player.vimeo.com/video/{{item.v}}"><i class="icon-magnifier"></i></a></li>
-                            <li ng-if="userRole == 'admin' || userRole == 'teacher'"><a ng-click="editItem(item.id)" title="{{phrase.Edit}}" tooltip class="btn default btn-outline" href="javascript:void(0);"><i class="icon-pencil"></i></a></li>
-                            <li ng-if="userRole == 'admin' || userRole == 'teacher'"><a ng-click="removeItem(item,$index)" title="{{phrase.Remove}}" tooltip class="btn default btn-outline" href="javascript:void(0);"><i class="icon-trash"></i></a></li>
+                            <li ng-if="item.mediaType == '1'"><a colorbox="{transition:'elastic'}" class="btn default btn-outline" youtube="true" title="{{item.mediaDescription}}" href="https://www.youtube.com/embed/{{item.v}}?rel=0&amp;wmode=transparent"><i class="icon-magnifier"></i></a></li>
+                            <li ng-if="item.mediaType == '2'"><a colorbox="{transition:'elastic'}" class="btn default btn-outline" vimeo="true" title="{{item.mediaDescription}}" href="https://player.vimeo.com/video/{{item.v}}"><i class="icon-magnifier"></i></a></li>
+                            <li ng-show="$root.can('mediaCenter.editMedia')"><a ng-click="editItem(item.id)" title="{{phrase.Edit}}" tooltip class="btn default btn-outline" href="javascript:void(0);"><i class="icon-pencil"></i></a></li>
+                            <li ng-show="$root.can('mediaCenter.delMedia')"><a ng-click="removeItem(item,$index)" title="{{phrase.Remove}}" tooltip class="btn default btn-outline" href="javascript:void(0);"><i class="icon-trash"></i></a></li>
                         </ul>
                     </div>
                 </div>
@@ -196,7 +196,7 @@
                             <label class="col-sm-2 text-right control-label col-form-label">{{phrase.mediaImage}}</label>
                             <div class="col-sm-10">
 
-                                <div ngf-drop ngf-select ngf-change="mm_upload_selected()" ngf-multiple="true" ngf-keep="true" ng-model="mu_files_list" class="drop-box">{{phrase.selDrop}}</div>
+                                <div ngf-drop ngf-select ngf-multiple="true" ngf-keep="true" ng-model="mu_files_list" class="drop-box">{{phrase.selDrop}}</div>
                                 
                                 <ul class="ml_uploaded_images">
                                     <li ng-repeat="file in mu_files_list" style="font:smaller">

@@ -8,7 +8,7 @@ class AccountSettingsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -49,6 +49,10 @@ class AccountSettingsController extends Controller {
 
 	function saveProfile(){
 
+		if(!$this->panelInit->can( "AccountSettings.ChgProfileData" )){
+			exit;
+		}
+
 		if(\Input::has('spec')){
 			if( in_array(\Input::get('spec'),array('defTheme','defLang')) ){
 
@@ -80,6 +84,11 @@ class AccountSettingsController extends Controller {
 		}
 		if (\Input::hasFile('photo')) {
 			$fileInstance = \Input::file('photo');
+			
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['ChgProfileData'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
 			$newFileName = "profile_".$User->id.".jpg";
 			$file = $fileInstance->move('uploads/profile/',$newFileName);
 
@@ -95,6 +104,11 @@ class AccountSettingsController extends Controller {
 	}
 
 	function saveEmail(){
+
+		if(!$this->panelInit->can( "AccountSettings.chgEmailAddress" )){
+			exit;
+		}
+
 		if(\User::where('email',\Input::get('email'))->count() > 0){
 			return $this->panelInit->apiOutput(false,"Update profile",$this->panelInit->language['mailAlreadyUsed']);
 		}
@@ -109,6 +123,11 @@ class AccountSettingsController extends Controller {
 	}
 
 	function savePassword(){
+
+		if(!$this->panelInit->can( "AccountSettings.chgPassword" )){
+			exit;
+		}
+
 		if (\Hash::check(\Input::get('password'), $this->data['users']->password)) {
 			$User = \User::where('id',\Auth::user()->id)->first();
 			$User->password = \Hash::make(\Input::get('newPassword'));
@@ -121,6 +140,11 @@ class AccountSettingsController extends Controller {
 	}
 
 	function invoices(){
+
+		if(!$this->panelInit->can( "AccountSettings.myInvoices" )){
+			exit;
+		}
+		
 		$toReturn = array();
 
 		if($this->data['users']->role == "student"){

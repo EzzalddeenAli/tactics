@@ -8,7 +8,7 @@ class sectionsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,15 +21,14 @@ class sectionsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
-
-		if(!$this->panelInit->hasThePerm('classes')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+		if(!$this->panelInit->can( array("sections.list","sections.addSection","sections.editSection","sections.delSection") )){
+			exit;
+		}
+
 		$toReturn = array();
 
 		$classesIn = array();
@@ -68,6 +67,11 @@ class sectionsController extends Controller {
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "sections.delSection" )){
+			exit;
+		}
+
 		if ( $postDelete = \sections::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -78,6 +82,11 @@ class sectionsController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "sections.addSection" )){
+			exit;
+		}
+
 		$sections = new \sections();
 		$sections->sectionName = \Input::get('sectionName');
 		$sections->sectionTitle = \Input::get('sectionTitle');
@@ -89,12 +98,22 @@ class sectionsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "sections.editSection" )){
+			exit;
+		}
+
 		$sections = \sections::where('id',$id)->first()->toArray();
 		$sections['teacherId'] = json_decode($sections['teacherId'],true);
 		return $sections;
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "sections.editSection" )){
+			exit;
+		}
+
 		$sections = \sections::find($id);
 		$sections->sectionName = \Input::get('sectionName');
 		$sections->sectionTitle = \Input::get('sectionTitle');

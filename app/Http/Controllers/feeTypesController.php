@@ -8,7 +8,7 @@ class feeTypesController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,15 +22,15 @@ class feeTypesController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
-
-		if(!$this->panelInit->hasThePerm('accounting')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("FeeTypes.list","FeeTypes.addFeeType","FeeTypes.editFeeType","FeeTypes.delFeeType") )){
+			exit;
+		}
+		
 		$toReturn = array();
 		$toReturn['types'] = \fee_type::get();
 		$toReturn['groups'] = \fee_group::get();
@@ -39,6 +39,11 @@ class feeTypesController extends Controller {
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "FeeTypes.delFeeType" )){
+			exit;
+		}
+
 		if ( $postDelete = \fee_type::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -49,6 +54,10 @@ class feeTypesController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "FeeTypes.addFeeType" )){
+			exit;
+		}
 
 		if(\Input::has('feeSchDetails')){
 			$feeSchDetails = \Input::get('feeSchDetails');
@@ -78,6 +87,11 @@ class feeTypesController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "FeeTypes.editFeeType" )){
+			exit;
+		}
+
 		$fee_type = \fee_type::where('id',$id)->first()->toArray();
 		$fee_type['feeSchDetails'] = json_decode($fee_type['feeSchDetails'],true);
 
@@ -92,6 +106,11 @@ class feeTypesController extends Controller {
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "FeeTypes.editFeeType" )){
+			exit;
+		}
+		
 		$feeTypeNextTS = 0;
 
 		if(\Input::has('feeSchDetails')){

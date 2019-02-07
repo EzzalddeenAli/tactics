@@ -8,7 +8,7 @@ class DormitoriesController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,19 +21,25 @@ class DormitoriesController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
-
-		if(!$this->panelInit->hasThePerm('Dormitories')){
-			exit;
-		}
+		
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("Dormitories.list","Dormitories.addDormitories","Dormitories.editDorm","Dormitories.delDorm") )){
+			exit;
+		}
+
 		return \dormitories::get();
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "Dormitories.delDorm" )){
+			exit;
+		}
+
 		if ( $postDelete = \dormitories::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -44,6 +50,11 @@ class DormitoriesController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "Dormitories.addDormitories" )){
+			exit;
+		}
+
 		$dormitories = new \dormitories();
 		$dormitories->dormitory = \Input::get('dormitory');
 		$dormitories->dormDesc = \Input::get('dormDesc');
@@ -53,10 +64,20 @@ class DormitoriesController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "Dormitories.editDorm" )){
+			exit;
+		}
+
 		return \dormitories::where('id',$id)->first();
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "Dormitories.editDorm" )){
+			exit;
+		}
+
 		$dormitories = \dormitories::find($id);
 		$dormitories->dormitory = \Input::get('dormitory');
 		$dormitories->dormDesc = \Input::get('dormDesc');

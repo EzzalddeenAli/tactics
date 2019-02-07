@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.AddAssignments}}</button>
+                <button  ng-show="$root.can('Assignments.AddAssignments')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.AddAssignments}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text"  name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control input-sm">
@@ -28,7 +28,7 @@
                                 <th>{{phrase.AssignmentTitle}}</th>
                                 <th>{{phrase.AssignmentDescription}}</th>
                                 <th>{{phrase.AssignmentDeadline}}</th>
-                                <th ng-show="userRole != 'parent'" style="width:200px;">{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('Assignments.Download') || $root.can('Assignments.viewAnswers') || $root.can('Assignments.applyAssAnswer') || $root.can('Assignments.editAssignment') || $root.can('Assignments.delAssignment')" style="width:200px;">{{phrase.Operations}}</th>
                             </tr>
                         </thead>
                         <tbody ng-repeat="assignment in assignments | filter:searchText">
@@ -37,12 +37,12 @@
                                 <td>{{assignment.AssignTitle}}</td>
                                 <td>{{assignment.AssignDescription}}</td>
                                 <td>{{assignment.AssignDeadLine}}</td>
-                                <td  ng-show="userRole != 'parent'">
-                                  <a target="_blank" href="{{'index.php/assignments/download/'+assignment.id}}"><button type="button" class="btn btn-warning btn-circle" title="{{phrase.Download}}" tooltip><i class="fa fa-cloud-download"></i></button></a>
-                                  <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="listAnswers(assignment.id)" type="button" class="btn btn-success btn-circle" title="{{phrase.viewAnswers}}" tooltip><i class="fa fa-check"></i></button>
-                                  <button ng-if="userRole == 'student'" ng-click="upload(assignment.id)" type="button" class="btn btn-info btn-circle" title="Upload answer" tooltip><i class="fa fa-upload"></i></button>
-                                  <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="edit(assignment.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                  <button ng-if="userRole == 'admin' || userRole == 'teacher'" ng-click="remove(assignment,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('Assignments.Download') || $root.can('Assignments.viewAnswers') || $root.can('Assignments.applyAssAnswer') || $root.can('Assignments.editAssignment') || $root.can('Assignments.delAssignment')">
+                                  <a ng-show="$root.can('Assignments.Download')" target="_blank" href="{{'index.php/assignments/download/'+assignment.id}}"><button type="button" class="btn btn-warning btn-circle" title="{{phrase.Download}}" tooltip><i class="fa fa-cloud-download"></i></button></a>
+                                  <button ng-show="$root.can('Assignments.viewAnswers')" ng-click="listAnswers(assignment.id)" type="button" class="btn btn-success btn-circle" title="{{phrase.viewAnswers}}" tooltip><i class="fa fa-check"></i></button>
+                                  <button ng-show="$root.can('Assignments.applyAssAnswer')" ng-click="upload(assignment.id)" type="button" class="btn btn-info btn-circle" title="Upload answer" tooltip><i class="fa fa-upload"></i></button>
+                                  <button ng-show="$root.can('Assignments.editAssignment')" ng-click="edit(assignment.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                  <button ng-show="$root.can('Assignments.delAssignment')" ng-click="remove(assignment,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="assignmentsAnswers">

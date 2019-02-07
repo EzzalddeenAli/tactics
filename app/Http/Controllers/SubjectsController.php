@@ -8,7 +8,7 @@ class SubjectsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,15 +21,15 @@ class SubjectsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
-
-		if(!$this->panelInit->hasThePerm('Subjects')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("Subjects.list","Subjects.addSubject","Subjects.editSubject","Subjects.delSubject") )){
+			exit;
+		}
+
 		$toReturn = array();
 		$toReturn['subjects'] = \DB::table('subject')
 					->leftJoin('users', 'users.id', '=', 'subject.teacherId')
@@ -48,6 +48,11 @@ class SubjectsController extends Controller {
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "Subjects.delSubject" )){
+			exit;
+		}
+
 		if ( $postDelete = \subject::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -58,6 +63,11 @@ class SubjectsController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "Subjects.addSubject" )){
+			exit;
+		}
+
 		$subject = new \subject();
 		$subject->subjectTitle = \Input::get('subjectTitle');
 		$subject->teacherId = json_encode(\Input::get('teacherId'));
@@ -69,12 +79,22 @@ class SubjectsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "Subjects.editSubject" )){
+			exit;
+		}
+
 		$subject = \subject::where('id',$id)->first()->toArray();
 		$subject['teacherId'] = json_decode($subject['teacherId'],true);
 		return $subject;
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "Subjects.editSubject" )){
+			exit;
+		}
+		
 		$subject = \subject::find($id);
 		$subject->subjectTitle = \Input::get('subjectTitle');
 		$subject->teacherId = json_encode(\Input::get('teacherId'));

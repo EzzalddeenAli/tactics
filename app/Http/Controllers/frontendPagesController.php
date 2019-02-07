@@ -17,17 +17,26 @@ class frontendPagesController extends Controller {
 		$this->data['users'] = $this->panelInit->getAuthUser();
 	}
 
-	public function index($permalink)
+	public function index($permalink = "home")
 	{
 
 		if(!isset($this->panelInit->settingsArray['cms_active']) || $this->panelInit->settingsArray['cms_active'] != 1){
 			return \Redirect::to('/login');
 		}
 
+		if($permalink == ""){
+			$permalink = "home";
+		}
 		$route_permalink = $permalink;
 		$splitted_permalink = explode("/",$route_permalink);
+		
+		$permalink = $this->has_permalink($splitted_permalink[0]);
+		
+		if($permalink == false && $splitted_permalink[0] == "home"){
+			return \Redirect::to('/login');
+		}
 
-		if(!$permalink = $this->has_permalink($splitted_permalink[0])){
+		if($permalink == false){
 			return \Redirect::to('/');
 		}
 
@@ -91,8 +100,10 @@ class frontendPagesController extends Controller {
 		}
 
 		if($permalink['page_template'] == "gallery"){
-			foreach ($template_vars['page_slider_images'] as $key => $value) {
-				$template_vars['page_slider_images'][$key]['thumb_image'] = $this->generateThumb($value['file_uploaded_name'],170,127);
+			if(isset($template_vars['page_slider_images']) && is_array($template_vars['page_slider_images'])){
+				foreach ($template_vars['page_slider_images'] as $key => $value) {
+					$template_vars['page_slider_images'][$key]['thumb_image'] = $this->generateThumb($value['file_uploaded_name'],340,230);
+				}
 			}
 		}
 
@@ -116,6 +127,25 @@ class frontendPagesController extends Controller {
 					$sendMessage .= "<br/>E-mail : ".\Input::get('email') ;
 					$sendMessage .= "<br/>Subject : ".\Input::get('subject') ;
 					$sendMessage .= "<br/>Message : ".\Input::get('message') ;
+
+					$message = new \contact_messages();
+					if(\Input::has('subject')){
+						$message->mail_subject = \Input::get('subject');
+					}
+					if(\Input::has('firstname')){
+						$message->firstName = \Input::get('firstname');
+					}
+					if(\Input::has('lastname')){
+						$message->lastName = \Input::get('lastname');
+					}
+					if(\Input::has('email')){
+						$message->email = \Input::get('email');
+					}
+					if(\Input::has('message')){
+						$message->message = \Input::get('message');
+					}
+					$message->message_time = time();
+					$message->save();
 
 					$SmsHandler = new \MailSmsHandler();
 					$SmsHandler->mail($this->panelInit->settingsArray['systemEmail'],"Inquiry : ".\Input::get('subject'),$sendMessage,\Input::get('firstname') . " " . \Input::get('lastname'));
@@ -178,7 +208,7 @@ class frontendPagesController extends Controller {
 	}
 
 	public function get_teachers_list($page){
-		$teachers_list = \User::where('role','teacher')->where('activated',1)->where('account_active',1)->take('20')->skip(20* ($page - 1) )->get()->toArray();
+		$teachers_list = \User::whereIn('role',array('teacher','employee'))->where('activated',1)->where('account_active',1)->take('20')->skip(20* ($page - 1) )->get()->toArray();
 		return $teachers_list;
 	}
 
@@ -213,7 +243,6 @@ class frontendPagesController extends Controller {
 
 		$to_return['language'] = $this->panelInit->language;
 		$to_return['rtl'] = $this->panelInit->isRTL;
-
 		
 		if(isset($this->panelInit->settingsArray['cms_facebook'])){
 			$to_return['social_facebook'] = $this->panelInit->settingsArray['cms_facebook'];			
@@ -259,7 +288,7 @@ class frontendPagesController extends Controller {
 									                 }
 									             });
 
-		$frontend_pages = $frontend_pages->where('page_navbar_visible',1)->select('page_title','page_permalink')->get()->toArray();
+		$frontend_pages = $frontend_pages->where('page_navbar_visible',1)->select('page_title','page_permalink')->orderBy('page_order','ASC')->get()->toArray();
 
 		return $frontend_pages;
 

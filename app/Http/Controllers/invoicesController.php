@@ -8,7 +8,7 @@ class invoicesController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,32 +22,18 @@ class invoicesController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('accounting')){
-			exit;
-		}
 	}
 
 	public function listAll($page = 1)
 	{
+
+		if(!$this->panelInit->can( array("Invoices.list","Invoices.View","Invoices.addPayment","Invoices.editPayment","Invoices.delPayment","Invoices.collInvoice","Invoices.payRevert","Invoices.Export","Invoices.dueInvoices") )){
+			exit;
+		}
+
 		$toReturn = array();
 
-		if($this->data['users']->role == "admin" || $this->data['users']->role == "account"){
-
-			$toReturn['invoices'] = \DB::table('payments')
-						->leftJoin('users', 'users.id', '=', 'payments.paymentStudent')
-						->select('payments.id as id',
-						'payments.paymentTitle as paymentTitle',
-						'payments.paymentDescription as paymentDescription',
-						'payments.paymentAmount as paymentAmount',
-						'payments.paidAmount as paidAmount',
-						'payments.paymentDiscounted as paymentDiscounted',
-						'payments.paymentStatus as paymentStatus',
-						'payments.paymentDate as paymentDate',
-						'payments.dueDate as dueDate',
-						'payments.paymentStudent as studentId',
-						'users.fullName as fullName');
-
-		}elseif($this->data['users']->role == "student" || $this->data['users']->role == "teacher"){
+		if($this->data['users']->role == "student" || $this->data['users']->role == "teacher"){
 
 			$toReturn['invoices'] = \DB::table('payments')
 						->where('paymentStudent',$this->data['users']->id)
@@ -87,6 +73,22 @@ class invoicesController extends Controller {
 						'payments.dueDate as dueDate',
 						'payments.paymentStudent as studentId',
 						'users.fullName as fullName');
+		}else{
+
+			$toReturn['invoices'] = \DB::table('payments')
+						->leftJoin('users', 'users.id', '=', 'payments.paymentStudent')
+						->select('payments.id as id',
+						'payments.paymentTitle as paymentTitle',
+						'payments.paymentDescription as paymentDescription',
+						'payments.paymentAmount as paymentAmount',
+						'payments.paidAmount as paidAmount',
+						'payments.paymentDiscounted as paymentDiscounted',
+						'payments.paymentStatus as paymentStatus',
+						'payments.paymentDate as paymentDate',
+						'payments.dueDate as dueDate',
+						'payments.paymentStudent as studentId',
+						'users.fullName as fullName');
+						
 		}
 
 		if(\Input::has('searchInput')){
@@ -145,7 +147,11 @@ class invoicesController extends Controller {
 	}
 
 	public function delete($id){
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
+
+		if(!$this->panelInit->can( "Invoices.delPayment" )){
+			exit;
+		}
+
 		if ( $postDelete = \payments::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -156,7 +162,11 @@ class invoicesController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
+
+		if(!$this->panelInit->can( "Invoices.addPayment" )){
+			exit;
+		}
+
 		$craetedPayments = array();
 		$paymentStudent = \Input::get('paymentStudent');
 		if(!is_array($paymentStudent)){
@@ -237,6 +247,11 @@ class invoicesController extends Controller {
 	}
 
 	function invoice($id){
+
+		if(!$this->panelInit->can( array("Invoices.View","Invoices.editPayment","Invoices.collInvoice","Invoices.payRevert") )){
+			exit;
+		}
+
 		$return = array();
 		$return['payment'] = \payments::where('id',$id)->first()->toArray();
 		$return['payment']['paymentDate'] = $this->panelInit->unix_to_date($return['payment']['paymentDate']);
@@ -409,6 +424,11 @@ class invoicesController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( array("Invoices.View","Invoices.editPayment","Invoices.collInvoice","Invoices.payRevert") )){
+			exit;
+		}
+
 		$payments = \payments::where('id',$id)->first()->toArray();
 		$payments['paymentDate'] = $this->panelInit->unix_to_date($payments['paymentDate']);
 		$payments['dueDate'] = $this->panelInit->unix_to_date($payments['dueDate']);
@@ -421,7 +441,11 @@ class invoicesController extends Controller {
 	}
 
 	function edit($id){
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
+
+		if(!$this->panelInit->can( "Invoices.editPayment" )){
+			exit;
+		}
+
 		$payments = \payments::find($id);
 		$payments->paymentTitle = \Input::get('paymentTitle');
 		if(\Input::has('paymentDescription')){
@@ -458,7 +482,11 @@ class invoicesController extends Controller {
 	}
 
 	function collect($id){
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
+
+		if(!$this->panelInit->can( "Invoices.collInvoice" )){
+			exit;
+		}
+
 		$payments = \payments::where('id',$id);
 		if($payments->count() == 0){
 			return;
@@ -504,7 +532,11 @@ class invoicesController extends Controller {
 	}
 
 	function revert($id){
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
+
+		if(!$this->panelInit->can( "Invoices.payRevert" )){
+			exit;
+		}
+
 		$paymentsCollection = \paymentsCollection::where('id',$id);
 		if($paymentsCollection->count() == 0){
 			return;
@@ -575,7 +607,11 @@ class invoicesController extends Controller {
 	}
 
 	function export($type){
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
+
+		if(!$this->panelInit->can( "Invoices.Export" )){
+			exit;
+		}
+		
 		if($type == "excel"){
 
 			$return['currency_symbol'] = $this->panelInit->settingsArray['currency_symbol'];

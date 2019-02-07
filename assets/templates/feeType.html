@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addFeeType}}</button>
+                <button ng-show="$root.can('FeeTypes.addFeeType')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addFeeType}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
@@ -27,15 +27,15 @@
                                 <th>{{phrase.FeeType}}</th>
                                 <th>{{phrase.feeCode}}</th>
                                 <th>{{phrase.feeDescription}}</th>
-                                <th>{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('FeeTypes.editFeeType') || $root.can('FeeTypes.delFeeType')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="type in feeTypes | filter:searchText">
                                 <td>{{type.feeTitle}}</td>
                                 <td>{{type.feeCode}}</td>
                                 <td>{{type.feeDescription}}</td>
-                                <td>
-                                    <button ng-click="edit(type.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(type,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('FeeTypes.editFeeType') || $root.can('FeeTypes.delFeeType')">
+                                    <button ng-show="$root.can('FeeTypes.editFeeType')" ng-click="edit(type.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('FeeTypes.delFeeType')" ng-click="remove(type,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!feeTypes.length"><td class="noTableData" colspan="4">{{phrase.noFeeTypesAv}}</td></tr>

@@ -24,7 +24,7 @@ class LoginController extends Controller {
 					echo "1";
 					exit;
 				}
-				return \Redirect::to('/');
+				return \Redirect::to('/portal');
 			}else{
 				if(\Input::get('api')){
 					echo "0";
@@ -39,7 +39,7 @@ class LoginController extends Controller {
 					echo "1";
 					exit;
 				}
-				return \Redirect::to('/');
+				return \Redirect::to('/portal');
 			}else{
 				if(\Input::get('api')){
 					echo "0";
@@ -160,6 +160,16 @@ class LoginController extends Controller {
 				exit;
 			}
 		}
+		if(\Input::has('studentRollId') AND \User::where('studentRollId',trim(\Input::get('studentRollId')))->count() > 0){
+			return json_encode(array("jsTitle"=>$this->panelInit->language['registerAcc'],"jsStatus"=>"0","jsMessage"=>"Student roll id already used before." ));
+		}
+
+		//Select the default role
+		$def_role = \roles::where('def_for',\Input::get('role'))->select('id');
+		if($def_role->count() == 0){
+			return $this->panelInit->apiOutput(false,'Import','No default role assigned for teachers, Please contact administartor');
+		}
+		$def_role = $def_role->first();
 
 		$user = new \User();
 		$user->username = \Input::get('username');
@@ -193,7 +203,8 @@ class LoginController extends Controller {
 		if(\Input::get('studentInfo') != ""){
 			$user->parentOf = json_encode(\Input::get('studentInfo'));
 		}
-
+	
+		$user->role_perm = $def_role->id;
 		$user->save();
 
 		if(\Input::get('role') == "student" AND \Input::has('studentClass')){

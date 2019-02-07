@@ -5,7 +5,7 @@ if (jQuery) {
         return originalFn.apply(this, arguments);
     }
 }
-var OraSchool = angular.module('OraSchool',['ngRoute','ngFileUpload','ngCookies','ngUpload','ui.autocomplete','angularUtils.directives.dirPagination','timer']).run(function($http,dataFactory,$rootScope,$q,Upload,$timeout) {
+var OraSchool = angular.module('OraSchool',['ngRoute','ngFileUpload','ngCookies','ngUpload','ui.autocomplete','angularUtils.directives.dirPagination','timer']).run(function($http,dataFactory,$rootScope,$q,Upload,$timeout,$location) {
 
     $rootScope.defaultAcademicYear = function() {
         angular.forEach($rootScope.dashboardData.academicYear, function (item) {
@@ -14,7 +14,7 @@ var OraSchool = angular.module('OraSchool',['ngRoute','ngFileUpload','ngCookies'
             }
         });
     }
-
+    console.log($location.$$absUrl);
     $rootScope.mm_select_upload = function(files,errFiles){
         if(files == null || files.length == 0){
             $rootScope.media_manager = !$rootScope.media_manager;
@@ -123,6 +123,14 @@ var OraSchool = angular.module('OraSchool',['ngRoute','ngFileUpload','ngCookies'
             $(element).addClass('mm_gallery_image_selected');
         }
     }
+
+    $rootScope.can = function(perm){
+        if($rootScope.dashboardData.perms.indexOf(perm) !== -1) {
+            return true
+        }
+        return false;
+    }
+
 });
 
 OraSchool.config(function($logProvider){
@@ -163,11 +171,9 @@ OraSchool.controller('mainController', function(dataFactory,$rootScope,$route,$s
     }
 
     $scope.adminHasPerm = function(perm){
-        if($rootScope.dashboardData.adminPerm == "full"){
-            return true;
-        }else{
-            return $.inArray(perm, $rootScope.dashboardData.adminPerm) > -1;
-        }
+        return $rootScope.dashboardData.perms.some(function(s) {
+            return s.indexOf(perm) > -1;
+        });
     }
 
     $scope.changeTheme = function(theme){
@@ -297,6 +303,7 @@ OraSchool.controller('registeration', function(dataFactory,$rootScope,$scope) {
 
 OraSchool.controller('adminsController', function(dataFactory,$rootScope,$scope) {
     $scope.admins = {};
+    $scope.roles = {};
     $scope.views = {};
     $scope.views.list = true;
     $scope.form = {};
@@ -305,7 +312,8 @@ OraSchool.controller('adminsController', function(dataFactory,$rootScope,$scope)
 
     $scope.load_admins = function(){
         dataFactory.httpRequest('index.php/admins/listAll').then(function(data) {
-            $scope.admins = data;
+            $scope.admins = data.admins;
+            $scope.roles = data.roles;
             $scope.changeView('list');
             showHideLoad(true);
         });
@@ -381,16 +389,19 @@ OraSchool.controller('adminsController', function(dataFactory,$rootScope,$scope)
     }
 });
 
-OraSchool.controller('accountantsController', function(dataFactory,$rootScope,$scope) {
-    $scope.accountants = {};
+OraSchool.controller('employeesController', function(dataFactory,$rootScope,$scope) {
+    $scope.employees = {};
     $scope.views = {};
     $scope.views.list = true;
     $scope.form = {};
     $scope.form.comVia = ["mail","sms","phone"];
 
     $scope.load_data = function(){
-        dataFactory.httpRequest('index.php/accountants/listAll').then(function(data) {
-            $scope.accountants = data;
+        dataFactory.httpRequest('index.php/employees/listAll').then(function(data) {
+            $scope.employees = data.employees;
+            $scope.roles = data.roles;
+            $scope.departments = data.departments;
+            $scope.designations = data.designations;
             $scope.changeView('list');
             showHideLoad(true);
         });
@@ -401,7 +412,7 @@ OraSchool.controller('accountantsController', function(dataFactory,$rootScope,$s
         response = apiResponse(content,'add');
         if(content.status == "success"){
             showHideLoad();
-            $scope.accountants.push(response);
+            $scope.employees.push(response);
             $scope.load_data();
         }
         showHideLoad(true);
@@ -411,10 +422,10 @@ OraSchool.controller('accountantsController', function(dataFactory,$rootScope,$s
         var confirmRemove = confirm($rootScope.phrase.sureRemove);
         if (confirmRemove == true) {
             showHideLoad();
-            dataFactory.httpRequest('index.php/accountants/delete/'+item.id,'POST',{},{}).then(function(data) {
+            dataFactory.httpRequest('index.php/employees/delete/'+item.id,'POST',{},{}).then(function(data) {
                 response = apiResponse(data,'remove');
                 if(data.status == "success"){
-                    $scope.accountants.splice(index,1);
+                    $scope.employees.splice(index,1);
                 }
                 showHideLoad(true);
             });
@@ -423,7 +434,7 @@ OraSchool.controller('accountantsController', function(dataFactory,$rootScope,$s
 
     $scope.edit = function(id){
         showHideLoad();
-        dataFactory.httpRequest('index.php/accountants/'+id).then(function(data) {
+        dataFactory.httpRequest('index.php/employees/'+id).then(function(data) {
             $scope.form = data;
             $scope.changeView('edit');
             showHideLoad(true);
@@ -441,10 +452,10 @@ OraSchool.controller('accountantsController', function(dataFactory,$rootScope,$s
 
     $scope.account_status = function(user_id,$index){
         showHideLoad();
-        dataFactory.httpRequest('index.php/accountants/account_status/'+user_id,'POST',{},{}).then(function(data) {
+        dataFactory.httpRequest('index.php/employees/account_status/'+user_id,'POST',{},{}).then(function(data) {
             response = apiResponse(data,'edit');
             if(data.status == "success"){
-                $scope.accountants[$index].account_active = response.account_active;
+                $scope.employees[$index].account_active = response.account_active;
             }
             showHideLoad(true);
         });
@@ -627,9 +638,11 @@ OraSchool.controller('subjectsController', function(dataFactory,$rootScope,$scop
 
 OraSchool.controller('teachersController', function(dataFactory,$rootScope,$scope,$sce) {
     $scope.teachers = {};
+    $scope.roles = {};
     $scope.teachersTemp = {};
     $scope.totalItemsTemp = {};
     $scope.transports = {};
+    $scope.transport_vehicles = {};
     $scope.teachersApproval = {};
     $scope.views = {};
     $scope.views.list = true;
@@ -716,6 +729,8 @@ OraSchool.controller('teachersController', function(dataFactory,$rootScope,$scop
         dataFactory.httpRequest('index.php/teachers/listAll/'+pageNumber).then(function(data) {
             $scope.teachers = data.teachers;
             $scope.transports = data.transports;
+            $scope.transport_vehicles = data.transport_vehicles;
+            $scope.roles = data.roles;
             $scope.totalItems = data.totalItems;
             showHideLoad(true);
         });
@@ -726,6 +741,7 @@ OraSchool.controller('teachersController', function(dataFactory,$rootScope,$scop
         dataFactory.httpRequest('index.php/teachers/listAll/'+pageNumber,'POST',{},{'searchInput':$scope.searchInput}).then(function(data) {
             $scope.teachers = data.teachers;
             $scope.transports = data.transports;
+            $scope.transport_vehicles = data.transport_vehicles;
             $scope.totalItems = data.totalItems;
             showHideLoad(true);
         });
@@ -868,7 +884,7 @@ OraSchool.controller('teachersController', function(dataFactory,$rootScope,$scop
 
 });
 
-OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scope,$sce,$route) {
+OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scope,$sce,$route,$location) {
     $scope.students = {};
     $scope.studentsTemp = {};
     $scope.totalItemsTemp = {};
@@ -891,6 +907,9 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
     $scope.searchInput = {};
     var methodName = $route.current.methodName;
     $scope.current_page = 1;
+    $scope.roles = {};
+    $scope.add_doc = [];
+    $scope.student_categories = [];
 
     $scope.changeView = function(view){
         if(view == "add" || view == "list" || view == "show"){
@@ -907,6 +926,7 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
         $scope.views.reviewImport = false;
         $scope.views.medical = false;
         $scope.views.grad = false;
+        $scope.views.admission = false;
         $scope.views[view] = true;
     }
 
@@ -920,6 +940,8 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
             $scope.hostel = data.hostel ;
             $scope.totalItems = data.totalItems
             $scope.userRole = data.userRole;
+            $scope.roles = data.roles;
+            $scope.student_categories = data.student_categories;
             showHideLoad(true);
         });
     }
@@ -934,6 +956,7 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
             $scope.hostel = data.hostel ;
             $scope.totalItems = data.totalItems
             $scope.userRole = data.userRole;
+            $scope.student_categories = data.student_categories;
             showHideLoad(true);
         });
     }
@@ -960,6 +983,7 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
             $scope.hostel = data.hostel ;
             $scope.totalItems = data.totalItems
             $scope.userRole = data.userRole;
+            $scope.student_categories = data.student_categories;
             $rootScope.dashboardData.sort.students = sortBy;
             showHideLoad(true);
         });
@@ -978,6 +1002,20 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
             }
 
             $scope.changeView('marksheet');
+            showHideLoad(true);
+        });
+    }else if(methodName == "admission"){
+        $scope.add_doc = [];
+        showHideLoad();
+        dataFactory.httpRequest('index.php/students/preAdmission').then(function(data) {
+            $scope.classes = data.classes ;
+            $scope.sections = data.sections ;
+            $scope.transports = data.transports ;
+            $scope.hostel = data.hostel ;
+            $scope.roles = data.roles;
+            $scope.student_categories = data.student_categories;
+            $scope.form.parentInfo = [];
+            $scope.changeView('admission');
             showHideLoad(true);
         });
     }else{
@@ -1066,8 +1104,7 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
     $scope.saveAdd = function(content){
         response = apiResponse(content,'add');
         if(content.status == "success"){
-            showHideLoad();
-            $scope.getResultsPage();
+            $location.path( "/students" );
         }
         showHideLoad(true);
     }
@@ -1112,6 +1149,7 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
     }
 
     $scope.edit = function(id){
+        $scope.add_doc = [];
         showHideLoad();
         dataFactory.httpRequest('index.php/students/'+id).then(function(data) {
             $scope.form = data;
@@ -1123,7 +1161,6 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
     $scope.saveEdit = function(content){
         response = apiResponse(content,'edit');
         if(content.status == "success"){
-            showHideLoad();
             $scope.getResultsPage();
         }
         showHideLoad(true);
@@ -1233,6 +1270,154 @@ OraSchool.controller('studentsController', function(dataFactory,$rootScope,$scop
         });
     }
 
+    $scope.add_document_row = function(){
+        $('.tr_clone').last().clone().insertAfter(".tr_clone:last");
+    }
+
+    $scope.add_document_row_edit = function(){
+        $scope.add_doc.push({'dd':'dd'});
+    }
+
+    $scope.remove_student_docs = function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/students/rem_std_docs','POST',{},{'id':id}).then(function(data) {
+            response = apiResponse(data,'remove');
+            if(data.status == "success"){
+                $scope.form.docs.splice($index,1);
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.linkParent = function(){
+        $scope.modalTitle = $rootScope.phrase.linkStudentParent;
+        $scope.showModalLink = !$scope.showModalLink;
+    }
+
+    $scope.linkParentButton = function(){
+        var searchAbout = $('#searchLink').val();
+        if(searchAbout.length < 3){
+            alert($rootScope.phrase.minCharLength3);
+            return;
+        }
+        dataFactory.httpRequest('index.php/students/search_parent/'+searchAbout).then(function(data) {
+            $scope.searchResults = data;
+        });
+    }
+
+    $scope.linkParentFinish = function(parent){
+        do{
+            var relationShip = prompt("Please enter relationship", "");
+        }while(relationShip == "");
+
+        if (relationShip != null && relationShip != "") {
+            $scope.form.parentInfo.push({"parent":parent.name,"relation":relationShip,"id": "" + parent.id + "" });
+            $scope.form.parentInfoSer = JSON.stringify($scope.form.parentInfo);
+            $scope.showModalLink = !$scope.showModalLink;
+        }
+    }
+
+    $scope.removeParent = function(index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            for (x in $scope.form.parentInfo) {
+                if($scope.form.parentInfo[x].id == index){
+                    $scope.form.parentInfo.splice(x,1);
+                    $scope.form.parentInfoSer = JSON.stringify($scope.form.parentInfo);
+                    break;
+                }
+            }
+        }
+    }
+});
+
+OraSchool.controller('student_categories', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.student_categories = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/student_categories/listAll').then(function(data) {
+            $scope.student_categories = data.student_categories;
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/student_categories','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/student_categories/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.student_categories.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/student_categories/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/student_categories/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/student_categories/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
 });
 
 OraSchool.controller('parentsController', function(dataFactory,$scope,$sce,$rootScope) {
@@ -1248,6 +1433,7 @@ OraSchool.controller('parentsController', function(dataFactory,$scope,$sce,$root
     $scope.importType ;
     $scope.searchResults = {};
     $scope.searchInput = {};
+    $scope.roles = {};
     $scope.userRole = $rootScope.dashboardData.role;
     $scope.current_page = 1;
 
@@ -1321,6 +1507,7 @@ OraSchool.controller('parentsController', function(dataFactory,$scope,$sce,$root
         showHideLoad();
         dataFactory.httpRequest('index.php/parents/listAll/'+pageNumber).then(function(data) {
             $scope.stparents = data.parents;
+            $scope.roles = data.roles;
             $scope.totalItems = data.totalItems;
             showHideLoad(true);
         });
@@ -1376,6 +1563,7 @@ OraSchool.controller('parentsController', function(dataFactory,$scope,$sce,$root
             $scope.stparents.push(response);
             $scope.getResultsPage();
         }
+        showHideLoad(true);
     }
 
     $scope.remove = function(item,index){
@@ -1441,6 +1629,7 @@ OraSchool.controller('parentsController', function(dataFactory,$scope,$sce,$root
         if(data.status == "success"){
             $scope.getResultsPage();
         }
+        showHideLoad(true);
     }
 
     $scope.waitingApproval = function(){
@@ -1633,22 +1822,21 @@ OraSchool.controller('newsboardController', function(dataFactory,$routeParams,$s
     }
 });
 
-OraSchool.controller('libraryController', function(dataFactory,$rootScope,$scope) {
+OraSchool.controller('libraryController', function(dataFactory,$rootScope,$scope,$route) {
     $scope.library = {};
     $scope.libraryTemp = {};
     $scope.totalItemsTemp = {};
     $scope.views = {};
-    $scope.views.list = true;
     $scope.form = {};
     $scope.userRole ;
+    var methodName = $route.current.methodName;
 
     $scope.totalItems = 0;
     $scope.pageChanged = function(newPage) {
-        getResultsPage(newPage);
+        $scope.getResultsPage(newPage);
     };
 
-    getResultsPage(1);
-    function getResultsPage(pageNumber) {
+    $scope.getResultsPage = function(pageNumber) {
         if(! $.isEmptyObject($scope.libraryTemp)){
             dataFactory.httpRequest('index.php/library/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
                 $scope.library = data.bookLibrary;
@@ -1664,6 +1852,14 @@ OraSchool.controller('libraryController', function(dataFactory,$rootScope,$scope
         }
     }
 
+    if(methodName == "subscription"){
+        $scope.views.subscription = true;
+        showHideLoad(true);
+    }else{
+        $scope.getResultsPage(1);
+        $scope.views.list = true;
+    }
+
     $scope.searchDB = function(){
         if($scope.searchText.length >= 3){
             if($.isEmptyObject($scope.libraryTemp)){
@@ -1671,7 +1867,7 @@ OraSchool.controller('libraryController', function(dataFactory,$rootScope,$scope
                 $scope.totalItemsTemp = $scope.totalItems;
                 $scope.library = {};
             }
-            getResultsPage(1);
+            $scope.getResultsPage(1);
         }else{
             if(! $.isEmptyObject($scope.libraryTemp)){
                 $scope.library = $scope.libraryTemp ;
@@ -1726,6 +1922,29 @@ OraSchool.controller('libraryController', function(dataFactory,$rootScope,$scope
         }
     }
 
+
+    $scope.search_subscription = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/library/members','POST',{},$scope.form).then(function(data) {
+            $scope.subscription_members = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.edit_subscription = function(user){
+        $scope.user_subscription = user;
+        $scope.modalTitle = "Manage Subscription";
+        $scope.addSubsModal = !$scope.addSubsModal;        
+    }
+
+    $scope.saveUsrSubscription = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/library/members_set','POST',{},{'user':$scope.user_subscription.id,'library_id':$scope.form.library_id}).then(function(data) {
+            $scope.addSubsModal = !$scope.addSubsModal;
+            showHideLoad(true);
+        });
+    }
+
     $scope.changeView = function(view){
         if(view == "add" || view == "list" || view == "show"){
             $scope.form = {};
@@ -1733,10 +1952,260 @@ OraSchool.controller('libraryController', function(dataFactory,$rootScope,$scope
         $scope.views.list = false;
         $scope.views.add = false;
         $scope.views.edit = false;
+        $scope.views.subscription = false;
         $scope.views[view] = true;
     }
 });
 
+OraSchool.controller('library_issues', function(dataFactory,$sce,$rootScope,$scope,$routeParams,$route) {
+    $scope.library_issue = {};
+    $scope.books = {};
+    $scope.views = {};
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    var methodName = $route.current.methodName;
+
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views.list_issued = false;
+        $scope.views[view] = true;
+    }
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.library_issueTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/library_issues/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.library_issue = data.library_issue;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/library_issues/listAll/'+pageNumber).then(function(data) {
+                $scope.library_issue = data.library_issue;
+                if( pageNumber == 1){
+                    $scope.books = data.books;
+                }
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.library_issueTemp)){
+                $scope.library_issueTemp = $scope.library_issue;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.library_issue = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.library_issueTemp)){
+                $scope.library_issue = $scope.library_issueTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.library_issueTemp = {};
+            }
+        }
+    }
+
+    $scope.load_issued_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.library_issueTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/library_issues/searchIssued/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.library_issue = data.library_issue;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/library_issues/listIssued/'+pageNumber).then(function(data) {
+                $scope.library_issue = data.library_issue;
+                if( pageNumber == 1){
+                    $scope.books = data.books;
+                }
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.issuedPageChanged = function(newPage) {
+        $scope.load_issued_data(newPage);
+    };
+
+    $scope.searchIssuedDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.library_issueTemp)){
+                $scope.library_issueTemp = $scope.library_issue;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.library_issue = {};
+            }
+            $scope.load_issued_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.library_issueTemp)){
+                $scope.library_issue = $scope.library_issueTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.library_issueTemp = {};
+            }
+        }
+    }
+
+    if(methodName == "library_return"){
+        $scope.changeView('list_issued');
+        $scope.load_issued_data();
+    }else{
+        $scope.changeView('list');
+        $scope.load_data();        
+    }
+
+    $scope.library_return = function(id){
+        $scope.book_id = id;
+        $scope.modalTitle = $rootScope.phrase.book_return;
+        $scope.show_return_modal = !$scope.show_return_modal;
+    }
+
+    $scope.library_return_now = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/library_issues/return/'+$scope.book_id,'POST',{},{'id':$scope.book_id,'ret_date':$scope.form.ret_date}).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.show_return_modal = !$scope.show_return_modal;
+                $scope.load_issued_data();
+                $scope.changeView('list_issued');
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/library_issues','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/library_issues/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.library_issue.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/library_issues/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/library_issues/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/library_issues/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.openSearchModal_user_id = function(){
+        $scope.modalTitle = $rootScope.phrase.searchUsers;
+        $scope.modalClass = "modal-lg";
+        $scope.showUsrSearchModal_user_id = !$scope.showUsrSearchModal_user_id;
+    }
+
+    $scope.searchUserButton_user_id = function(){
+        var searchAbout = $("#searchLink_user_id").val();
+        if(searchAbout.length < 3){
+            alert($rootScope.phrase.minCharLength3);
+            return;
+        }
+        dataFactory.httpRequest("index.php/library_issues/searchUser/"+searchAbout).then(function(data) {
+            $scope.searchResults_user_id = data;
+        });
+    }
+
+    $scope.serachUserFinish_user_id = function(user){
+        $scope.form.user_id = [];
+        $scope.form.user_id.push({"user":user.name,"id": "" + user.id + "" });
+        $scope.form.user_id_ser = JSON.stringify($scope.form.user_id);
+        $scope.showUsrSearchModal_user_id = !$scope.showUsrSearchModal_user_id;
+    }
+
+    $scope.removeUserSearch_user_id = function(user_id){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            for (x in $scope.form.user_id) {
+                if($scope.form.user_id[x].id == user_id){
+                    $scope.form.user_id.splice(x,1);
+                    $scope.form.user_id_ser = JSON.stringify($scope.form.user_id);
+                    break;
+                }
+            }
+        }
+    }
+    
+});
 
 OraSchool.controller('accountSettingsController', function(dataFactory,$rootScope,$scope,$route) {
     $scope.account = {};
@@ -1836,21 +2305,18 @@ OraSchool.controller('accountSettingsController', function(dataFactory,$rootScop
         }
     }
 
-    $scope.saveProfile = function(){
-        showHideLoad();
-        dataFactory.httpRequest('index.php/accountSettings/profile','POST',{},$scope.form).then(function(data) {
-            response = apiResponse(data,'edit');
-            if(response){
-                if($scope.form.defTheme != $scope.oldThemeVal){
-                    location.reload();
-                }
-                if($scope.form.defLang != $scope.defLang){
-                    location.reload();
-                }
-                $scope.form = response;
+    $scope.saveProfile = function(data){
+        response = apiResponse(data,'edit');
+        if(response){
+            if($scope.form.defTheme != $scope.oldThemeVal){
+                location.reload();
             }
-            showHideLoad(true);
-        });
+            if($scope.form.defLang != $scope.defLang){
+                location.reload();
+            }
+            $scope.form = response;
+        }
+        showHideLoad(true);
     }
 });
 
@@ -1869,16 +2335,30 @@ OraSchool.controller('classScheduleController', function(dataFactory,$rootScope,
         $scope.subject = data.subject;
         $scope.teachers = data.teachers;
         $scope.sections = data.sections;
+        $scope.class_id = data.class_id;
+        $scope.section_id = data.section_id;
         $scope.userRole = data.userRole;
         $scope.days = data.days;
         showHideLoad(true);
     });
 
-    $scope.edit = function(id){
+    $scope.edit = function(class_id,section_id){
+        if(typeof section_id == "undefined"){
+            $scope.selected_class = class_id;
+            $scope.selected_section = section_id;
+
+            $scope.query_id = class_id;
+        }else{
+            $scope.selected_class = class_id;
+            $scope.selected_section = section_id;
+        
+            $scope.query_id = section_id;
+        }
+        
         showHideLoad();
-        dataFactory.httpRequest('index.php/classschedule/'+id).then(function(data) {
+        dataFactory.httpRequest('index.php/classschedule/'+$scope.query_id).then(function(data) {
             $scope.classSchedule = data;
-            $scope.classId = id;
+            $scope.classId = $scope.query_id;
             $scope.changeView('edit');
             showHideLoad(true);
         });
@@ -1891,9 +2371,9 @@ OraSchool.controller('classScheduleController', function(dataFactory,$rootScope,
             dataFactory.httpRequest('index.php/classschedule/delete/'+$scope.classId+'/'+id,'POST').then(function(data) {
                 response = apiResponse(data,'remove');
                 if(data.status == "success"){
-                    for (x in $scope.classSchedule[day].sub) {
-                        if($scope.classSchedule[day].sub[x].id == id){
-                            $scope.classSchedule[day].sub.splice(x,1);
+                    for (x in $scope.classSchedule.schedule[day].sub) {
+                        if($scope.classSchedule.schedule[day].sub[x].id == id){
+                            $scope.classSchedule.schedule[day].sub.splice(x,1);
                         }
                     }
                 }
@@ -1915,10 +2395,10 @@ OraSchool.controller('classScheduleController', function(dataFactory,$rootScope,
         dataFactory.httpRequest('index.php/classschedule/'+$scope.classId,'POST',{},$scope.form).then(function(data) {
             response = apiResponse(data,'add');
             if(data.status == "success"){
-                if(! $scope.classSchedule[response.dayOfWeek].sub){
-                    $scope.classSchedule[response.dayOfWeek].sub = [];
+                if(typeof $scope.classSchedule.schedule[response.dayOfWeek].sub == "undefined"){
+                    $scope.classSchedule.schedule[response.dayOfWeek].sub = [];
                 }
-                $scope.classSchedule[response.dayOfWeek].sub.push({"id":response.id,"classId":response.classId,"subjectId":response.subjectId,"start":response.startTime,"end":response.endTime});
+                $scope.classSchedule.schedule[response.dayOfWeek].sub.push({"id":response.id,"classId":response.classId,"subjectId":response.subjectId,"start":response.startTime,"end":response.endTime});
             }
             $scope.scheduleModal = !$scope.scheduleModal;
             showHideLoad(true);
@@ -1943,15 +2423,15 @@ OraSchool.controller('classScheduleController', function(dataFactory,$rootScope,
         dataFactory.httpRequest('index.php/classschedule/sub/'+id,'POST',{},$scope.form).then(function(data) {
             response = apiResponse(data,'edit');
             if(data.status == "success"){
-                for (x in $scope.classSchedule[$scope.oldDay].sub) {
-                    if($scope.classSchedule[$scope.oldDay].sub[x].id == id){
-                        $scope.classSchedule[$scope.oldDay].sub.splice(x,1);
+                for (x in $scope.classSchedule.schedule[$scope.oldDay].sub) {
+                    if($scope.classSchedule.schedule[$scope.oldDay].sub[x].id == id){
+                        $scope.classSchedule.schedule[$scope.oldDay].sub.splice(x,1);
                     }
                 }
-                if(! $scope.classSchedule[response.dayOfWeek].sub){
-                    $scope.classSchedule[response.dayOfWeek].sub = [];
+                if(typeof $scope.classSchedule.schedule[response.dayOfWeek].sub == "undefined"){
+                    $scope.classSchedule.schedule[response.dayOfWeek].sub = [];
                 }
-                $scope.classSchedule[response.dayOfWeek].sub.push({"id":response.id,"classId":response.classId,"subjectId":response.subjectId,"start":response.startTime,"end":response.endTime});
+                $scope.classSchedule.schedule[response.dayOfWeek].sub.push({"id":response.id,"classId":response.classId,"subjectId":response.subjectId,"start":response.startTime,"end":response.endTime});
             }
             $scope.scheduleModalEdit = !$scope.scheduleModalEdit;
             showHideLoad(true);
@@ -2154,6 +2634,61 @@ OraSchool.controller('attendanceController', function(dataFactory,$scope) {
     }
 });
 
+OraSchool.controller('attendance_reportController', function(dataFactory,$scope,$rootScope) {
+    $scope.classes = {};
+    $scope.attendanceModel;
+    $scope.subjects = {};
+    $scope.views = {};
+    $scope.form = {};
+    $scope.userRole ;
+    $scope.class = {};
+    $scope.subject = {};
+    $scope.students = {};
+
+    dataFactory.httpRequest('index.php/attendance/data').then(function(data) {
+        $scope.classes = data.classes;
+        $scope.subjects = data.subject;
+        $scope.attendanceModel = data.attendanceModel;
+        $scope.changeView('list');
+        showHideLoad(true);
+    });
+
+    $scope.subjectList = function(){
+        dataFactory.httpRequest('index.php/dashboard/sectionsSubjectsList','POST',{},{"classes":$scope.form.classId}).then(function(data) {
+            $scope.subjects = data.subjects;
+            $scope.sections = data.sections;
+        });
+    }
+
+    $scope.generateReport = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/attendance/report','POST',{},$scope.form).then(function(data) {
+            $scope.students = data.students;
+            $scope.date_range = data.date_range;
+            $scope.class = data.class;
+            $scope.subject = data.subject;
+            $scope.changeView('report');
+            showHideLoad(true);
+        });
+    }
+
+    $scope.firstChunk = function(textdata){
+        var splitted = textdata.split("/");
+        if($rootScope.dashboardData.dateformat == "m/d/Y"){
+            return splitted[1];
+        }
+        if($rootScope.dashboardData.dateformat == "d/m/Y"){
+            return splitted[0];
+        }
+    }
+
+    $scope.changeView = function(view){
+        $scope.views.list = false;
+        $scope.views.report = false;
+        $scope.views[view] = true;
+    }
+});
+
 OraSchool.controller('staffAttendanceController', function(dataFactory,$scope) {
     $scope.views = {};
     $scope.form = {};
@@ -2165,6 +2700,9 @@ OraSchool.controller('staffAttendanceController', function(dataFactory,$scope) {
         showHideLoad();
         dataFactory.httpRequest('index.php/sattendance/list','POST',{},$scope.form).then(function(data) {
             $scope.teachers = data.teachers;
+            if(typeof data.InOut != "undefined"){
+                $scope.form.InOut = data.InOut;
+            }
             $scope.changeView('lists');
             showHideLoad(true);
         });
@@ -2198,6 +2736,41 @@ OraSchool.controller('staffAttendanceController', function(dataFactory,$scope) {
         $scope.views.edit = false;
         $scope.views.editSub = false;
         $scope.views.addSub = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('staffAttendance_reportController', function(dataFactory,$scope,$rootScope) {
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.form = {};
+    $scope.employees = {};
+
+    showHideLoad(true);
+
+    $scope.generateReport = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/sattendance/report','POST',{},$scope.form).then(function(data) {
+            $scope.employees = data.employees;
+            $scope.date_range = data.date_range;
+            $scope.changeView('report');
+            showHideLoad(true);
+        });
+    }
+
+    $scope.firstChunk = function(textdata){
+        var splitted = textdata.split("/");
+        if($rootScope.dashboardData.dateformat == "m/d/Y"){
+            return splitted[1];
+        }
+        if($rootScope.dashboardData.dateformat == "d/m/Y"){
+            return splitted[0];
+        }
+    }
+
+    $scope.changeView = function(view){
+        $scope.views.list = false;
+        $scope.views.report = false;
         $scope.views[view] = true;
     }
 });
@@ -2264,7 +2837,7 @@ OraSchool.controller('reportsController', function(dataFactory,$rootScope,$scope
     $scope.statsAttendanceExport = function(exportType){
         showHideLoad();
         $scope.form.exportType = exportType;
-        $http.post('reports', {'stats':'stdAttendance','data':$scope.form},{responseType: 'arraybuffer'}).success(function(data) {
+        $http.post('index.php/reports', {'stats':'stdAttendance','data':$scope.form},{responseType: 'arraybuffer'}).success(function(data) {
 
             if(exportType == "excel"){
                 var file = new Blob([ data ], {type : 'application/excel'});
@@ -2301,7 +2874,7 @@ OraSchool.controller('reportsController', function(dataFactory,$rootScope,$scope
     $scope.staffAttendanceExport = function(exportType){
         showHideLoad();
         $scope.form.exportType = exportType;
-        $http.post('reports', {'stats':'stfAttendance','data':$scope.form},{responseType: 'arraybuffer'}).success(function(data) {
+        $http.post('index.php/reports', {'stats':'stfAttendance','data':$scope.form},{responseType: 'arraybuffer'}).success(function(data) {
 
             if(exportType == "excel"){
                 var file = new Blob([ data ], {type : 'application/excel'});
@@ -2427,6 +3000,74 @@ OraSchool.controller('reportsController', function(dataFactory,$rootScope,$scope
         });
     }
 
+    $scope.genCertPrep = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/reports/preCert').then(function(data) {
+            $scope.classes = data.classes;
+            $scope.certs = data.certs;
+            $scope.changeView('gen_cert');
+            showHideLoad(true);
+        });
+    }
+
+    $scope.certGetStdList = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/reports/certGetStdList','POST',{},$scope.form).then(function(data) {
+            if(data){
+                $scope.certUsersList = data;
+            }
+            if($scope.certUsersList.length == 0){
+                alert($rootScope.phrase.noMatches);
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.printCertificate = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/reports','POST',{},{'stats':'certPrint','data':$scope.form}).then(function(data) {
+            if(data){
+                $scope.printCertInfo = data;
+
+                setTimeout(function() { 
+
+                    var mywindow = window.open('', 'new div', 'height=800,width=1200');
+                    mywindow.document.write('<html><head><title>Print Certificates</title>');
+                    mywindow.document.write('<link rel="stylesheet" href="assets/plugins/bootstrap/css/bootstrap.min.css" type="text/css" /><style> @media print { .no-print, .no-print * { display: none !important; } }</style>');
+                    mywindow.document.write('</head><body ><center><div class="no-print" style="padding:10px"><button type="button" onClick="window.print();">Print Certificates</button></style></center>');
+                    mywindow.document.write($('#printableArea').html());
+                    mywindow.document.write('</body></html>');
+                    return true;
+
+                }, 500);
+
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.processvars = function(template,userData){
+        template = template.replace("[user_name]", userData.user_name);
+        template = template.replace("[full_name]", userData.full_name);
+        template = template.replace("[email]", userData.email);
+        template = template.replace("[date_of_birth]", userData.date_of_birth);
+        template = template.replace("[gender]", userData.gender);
+        template = template.replace("[religion]", userData.religion);
+        template = template.replace("[phone_number]", userData.phone_number);
+        template = template.replace("[mobile_number]", userData.mobile_number);
+        template = template.replace("[address]", userData.address);
+        template = template.replace("[admission_number]", userData.admission_number);
+        template = template.replace("[admission_date]", userData.admission_date);
+        template = template.replace("[roll_id]", userData.roll_id);
+        template = template.replace("[student_category]", userData.student_category);
+        template = template.replace("[class_name]", userData.class_name);
+        template = template.replace("[section_name]", userData.section_name);
+        template = template.replace("[father_name]", userData.father_name);
+        template = template.replace("[mother_name]", userData.mother_name);
+
+        return $sce.trustAsHtml(template);
+    }
+
     $scope.changeView = function(view){
         $scope.views.list = false;
         $scope.views.lists = false;
@@ -2448,6 +3089,7 @@ OraSchool.controller('reportsController', function(dataFactory,$rootScope,$scope
         $scope.views.biometric_users_table = false;
         $scope.views.payRollReports = false;
         $scope.views.payRollReportsResults = false;
+        $scope.views.gen_cert = false;
         $scope.views[view] = true;
     }
 });
@@ -2909,17 +3551,66 @@ OraSchool.controller('homeworkController', function(dataFactory,$rootScope,$scop
     $scope.views.list = true;
     $scope.form = {};
     $scope.userRole ;
+    $scope.page = 1;
+    $scope.totalItems = 0;
 
-    $scope.loadhw = function(){
-        dataFactory.httpRequest('index.php/homeworks/listAll').then(function(data) {
-            $scope.classes = data.classes;
-            $scope.subject = data.subject;
-            $scope.homeworks = data.homeworks;
-            $scope.userRole = data.userRole
-            showHideLoad(true);
-        });
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.homeworksTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/homeworks/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.classes = data.classes;
+                $scope.subject = data.subject;
+                $scope.homeworks = data.homeworks;
+                $scope.userRole = data.userRole;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/homeworks/listAll/'+pageNumber).then(function(data) {
+                $scope.classes = data.classes;
+                $scope.subject = data.subject;
+                $scope.homeworks = data.homeworks;
+                $scope.userRole = data.userRole;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
     }
-    $scope.loadhw();
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.homeworksTemp)){
+                $scope.homeworksTemp = $scope.homeworks;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.homeworks = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.homeworksTemp)){
+                $scope.homeworks = $scope.homeworksTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.homeworksTemp = {};
+            }
+        }
+    }
+
+    $scope.load_data(1);
+
 
     $scope.subjectList = function(){
         dataFactory.httpRequest('index.php/dashboard/sectionsSubjectsList','POST',{},{"classes":$scope.form.classId}).then(function(data) {
@@ -2963,7 +3654,7 @@ OraSchool.controller('homeworkController', function(dataFactory,$rootScope,$scop
         if(content.status == "success"){
             showHideLoad();
 
-            $scope.loadhw();
+            $scope.load_data();
             $scope.changeView('list');
             showHideLoad(true);
         }
@@ -2989,7 +3680,7 @@ OraSchool.controller('homeworkController', function(dataFactory,$rootScope,$scop
         if(content.status == "success"){
             showHideLoad();
 
-            $scope.loadhw();
+            $scope.load_data();
             $scope.changeView('list');
             showHideLoad(true);
         }
@@ -3383,7 +4074,10 @@ OraSchool.controller('messagesController', function(dataFactory,$rootScope,$rout
     }
 
     $scope.linkStudentFinish = function(student){
-        $scope.form.toId = student.username;
+        if(typeof $scope.form.toId == "undefined"){
+            $scope.form.toId = [];
+        }
+        $scope.form.toId.push(student);
         $scope.searchUsers = !$scope.searchUsers;
     }
 
@@ -3477,7 +4171,12 @@ OraSchool.controller('messagesController', function(dataFactory,$rootScope,$rout
 
     $scope.sendMessageNow = function(){
         dataFactory.httpRequest('index.php/messages','POST',{},$scope.form).then(function(data) {
-            $location.path('/messages/'+data.messageId);
+            if(data.messageId == "home"){
+                getResultsPage(1);
+                $scope.changeView('list');
+            }else{
+                $location.path('/messages/'+data.messageId);                
+            }
         });
     }
 
@@ -3506,6 +4205,7 @@ OraSchool.controller('onlineExamsController', function(dataFactory,$rootScope,$s
     $scope.marks = {};
     $scope.takeData = {};
     $scope.form.examQuestion = [];
+    $scope.subject_list;
     $scope.userRole ;
 
     $scope.showModal = false;
@@ -3522,6 +4222,7 @@ OraSchool.controller('onlineExamsController', function(dataFactory,$rootScope,$s
         $scope.subject = data.subjects;
         $scope.onlineexams = data.onlineExams;
         $scope.userRole = data.userRole;
+        $scope.subject_list = data.subject_list;
         showHideLoad(true);
     });
 
@@ -3670,6 +4371,12 @@ OraSchool.controller('onlineExamsController', function(dataFactory,$rootScope,$s
             if(response){
                 $scope.changeView('take');
                 $scope.takeData = data;
+                $scope.examQuestions = data.examQuestions;
+
+                angular.forEach($scope.examQuestions, function(value, key) {
+                    $scope.examQuestions[key]['question_text'] = $sce.trustAsHtml($scope.examQuestions[key]['question_text']);
+                });
+
                 document.getElementById('onlineExamTimer').start();
                 if(data.timeLeft != 0){
                     $scope.$broadcast('timer-set-countdown', data.timeLeft);
@@ -3686,7 +4393,7 @@ OraSchool.controller('onlineExamsController', function(dataFactory,$rootScope,$s
 
     $scope.submitExam = function(){
         showHideLoad();
-        dataFactory.httpRequest('index.php/onlineExams/took/'+$scope.takeData.id,'POST',{},$scope.takeData).then(function(data) {
+        dataFactory.httpRequest('index.php/onlineExams/took/'+$scope.takeData.id,'POST',{},{'answers':$scope.examQuestions}).then(function(data) {
             if (typeof data.grade != "undefined") {
                 alert($rootScope.phrase.examYourGrade+data.grade);
             }else{
@@ -3735,19 +4442,133 @@ OraSchool.controller('onlineExamsController', function(dataFactory,$rootScope,$s
     }
 
     $scope.showStdMarks = function(studentAnswers){
-        var isLegacy = false;
-        $scope.studentAnswers = JSON.parse(studentAnswers);
-        angular.forEach($scope.studentAnswers, function (item) {
-            if(typeof item.state == "undefined" ){
-                isLegacy = true;
+        $scope.modalTitle = "Student's answers";
+        $scope.modalClass = "modal-lg";
+        $scope.studentAnswers = studentAnswers;
+        $scope.showstdAnswerModal = !$scope.showstdAnswerModal;
+    }
+
+    $scope.questionsArch = function(){
+        showHideLoad();
+        dataFactory.httpRequest('onlineExams/questions').then(function(data) {
+            $scope.questionsList = data;
+            $scope.changeView('questions');
+            showHideLoad(true);
+        });
+    }
+
+    $scope.addNewQuestion = function(){
+        $scope.form = {};
+        $scope.form.answersList = [""];
+        $scope.changeView('addQuestion');
+    }
+
+    $scope.addAnswer = function(){
+        $scope.form.answersList.push("");
+    }
+
+    $scope.delAnswer = function($index){
+        $scope.form.answersList.splice($index,1);
+    }
+
+    $scope.saveQuestionAdd = function(content){
+        response = apiResponse(content,'edit');
+        if(content.status == "success"){
+            $scope.questionsList.push(response);
+            $scope.changeView('questions');
+            showHideLoad(true);
+        }
+    }
+
+    $scope.editQuestionF = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('onlineExams/questions/'+id).then(function(data) {
+            $scope.changeView('editQuestion');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveQuestionEdit = function(content){
+        response = apiResponse(content,'edit');
+        if(content.status == "success"){
+            $scope.questionsList = apiModifyTable($scope.questionsList,response.id,response);
+            $scope.changeView('questions');
+            showHideLoad(true);
+        }
+    }
+
+    $scope.removeQuestionArch = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('onlineExams/questions/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.questionsList.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.addQuestionToExam = function(){
+        $scope.modalTitle = "Import Questions";
+        $scope.formQ = {};
+        $scope.formQ.answersList = [""];
+        $scope.modalClass = "modal-lg";
+        $scope.addQuestionModal = !$scope.addQuestionModal;
+    }
+
+    $scope.addAnswerOM = function(){
+        $scope.formQ.answersList.push("");
+    }
+
+    $scope.delAnswerOM = function(index){
+        $scope.formQ.answersList.splice(index,1);
+    }
+
+    $scope.removeQuestion = function(index){
+        $scope.form.examQuestion.splice(index,1);
+    }
+
+    $scope.searchQuestion = function(){
+        var searchAbout = $('#searchQuestion').val();
+        if(searchAbout.length < 3){
+            alert($rootScope.phrase.minCharLength3);
+            return;
+        }
+        dataFactory.httpRequest('onlineExams/searchQuestion/'+searchAbout).then(function(data) {
+            $scope.searchResults = data;
+        });
+    }
+
+    $scope.addQuestion2List = function(question){
+        var discard_add = false;
+        angular.forEach($scope.form.examQuestion, function(value, key) {
+            if(value.id == question.id){
+                discard_add = true;
             }
         });
-        if(isLegacy == true){
-            alert("Student answers not defined");
-        }else{
-            $scope.modalTitle = "Student's answers";
-            $scope.showstdAnswerModal = !$scope.showstdAnswerModal;
+        if(discard_add == false){
+            $scope.form.examQuestion.push({"id":question.id,"question_text":question.question_text,"question_type":question.question_type});            
         }
+    }
+
+    $scope.saveQuestionModalAdd = function(content){
+        response = apiResponse(content,'add');
+        if(content.status == "success"){
+            $scope.form.examQuestion.push({"id":response.id,"question_text":response.question_text,"question_type":response.question_type});
+            $scope.addQuestionModal = !$scope.addQuestionModal;
+        }
+    }
+
+    $scope.closeAnswerOM = function(){
+        $scope.addQuestionModal = !$scope.addQuestionModal;
+    }
+
+    $scope.removeExamQuestion = function(question,index){
+        $scope.form.examQuestion.splice(index,1);
     }
 
     $scope.changeView = function(view){
@@ -3760,6 +4581,9 @@ OraSchool.controller('onlineExamsController', function(dataFactory,$rootScope,$s
         $scope.views.edit = false;
         $scope.views.take = false;
         $scope.views.marks = false;
+        $scope.views.questions = false;
+        $scope.views.addQuestion = false;
+        $scope.views.editQuestion = false;
         $scope.views[view] = true;
     }
 });
@@ -3772,10 +4596,14 @@ OraSchool.controller('TransportsController', function(dataFactory,$scope,$rootSc
     $scope.form = {};
     $scope.userRole = $rootScope.dashboardData.role;
 
-    dataFactory.httpRequest('index.php/transports/listAll').then(function(data) {
-        $scope.transports = data;
-        showHideLoad(true);
-    });
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/transports/listAll').then(function(data) {
+            $scope.transports = data.routes;
+            $scope.vehicles = data.vehicles;
+            showHideLoad(true);
+        });       
+    }
+    $scope.load_data();
 
     $scope.edit = function(id){
         showHideLoad();
@@ -3791,7 +4619,7 @@ OraSchool.controller('TransportsController', function(dataFactory,$scope,$rootSc
         dataFactory.httpRequest('index.php/transports/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
             response = apiResponse(data,'edit');
             if(data.status == "success"){
-                $scope.transports = apiModifyTable($scope.transports,response.id,response);
+                $scope.load_data();
                 $scope.changeView('list');
             }
             showHideLoad(true);
@@ -3817,7 +4645,7 @@ OraSchool.controller('TransportsController', function(dataFactory,$scope,$rootSc
         dataFactory.httpRequest('index.php/transports','POST',{},$scope.form).then(function(data) {
             response = apiResponse(data,'add');
             if(data.status == "success"){
-                $scope.transports.push(response);
+                $scope.load_data();
                 $scope.changeView('list');
             }
             showHideLoad(true);
@@ -3829,6 +4657,131 @@ OraSchool.controller('TransportsController', function(dataFactory,$scope,$rootSc
         dataFactory.httpRequest('index.php/transports/list/'+id).then(function(data) {
             $scope.changeView('listSubs');
             $scope.transportsList = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.listSubs = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('transport_vehicles', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.transport_vehicles = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/transport_vehicles/listAll').then(function(data) {
+            $scope.transport_vehicles = data.transport_vehicles;
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/transport_vehicles','POST',{},$scope.form,"driver_photo,").then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/transport_vehicles/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.transport_vehicles.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/transport_vehicles/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/transport_vehicles/'+$scope.form.id,'POST',{},$scope.form,"driver_photo,").then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/transport_vehicles/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('transport_members', function(dataFactory,$scope,$rootScope) {
+    $scope.transports = {};
+    $scope.transportsList = {};
+    $scope.views = {};
+    $scope.views.members = true;
+    $scope.form = {};
+    $scope.userRole = $rootScope.dashboardData.role;
+
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/transports/members').then(function(data) {
+            $scope.transports = data.transports;
+            showHideLoad(true);
+        });       
+    }
+    $scope.load_data();
+
+    $scope.search_users = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/transports/members','POST',{},$scope.form).then(function(data) {
+            $scope.transport_members = data
             showHideLoad(true);
         });
     }
@@ -3956,37 +4909,46 @@ OraSchool.controller('mediaController', function($rootScope,dataFactory,$scope,U
         $scope.errFiles = errFiles;
         $scope.mm_files_count = 0;
         angular.forEach(mu_files_list, function(file) {
-            if(typeof file.uploaded == "undefined"){
-                showHideLoad();
-            
-                file.upload = Upload.upload({
-                    url: 'index.php/media',
-                    data: {
-                        mediaURL: file,
-                        albumId: $scope.dirNow,
-                        mediaTitle: $scope.form.mediaTitle,
-                        mediaDescription: $scope.form.mediaDescription,
-                        mediaType: $scope.form.mediaType
-                    }
-                });
-
-                file.upload.then(function (response) {
-                    $timeout(function () {
-                        apiResponse(response,'edit');
-                        $scope.mm_files_count ++;
-                        file.result = response.data;
-                        if(mu_files_list.length == $scope.mm_files_count){
-                            $scope.loadAlbum($scope.dirNow);
-                            $scope.changeView('list');
-                            showHideLoad(true);
+            if(typeof file.name == "undefined"){
+                $scope.mm_files_count ++;
+                if(mu_files_list.length == $scope.mm_files_count){
+                    $scope.loadAlbum($scope.dirNow);
+                    $scope.changeView('list');
+                    showHideLoad(true);
+                }
+            }else{
+                if(typeof file.uploaded == "undefined"){
+                    showHideLoad();
+                
+                    file.upload = Upload.upload({
+                        url: 'index.php/media',
+                        data: {
+                            mediaURL: file,
+                            albumId: $scope.dirNow,
+                            mediaTitle: $scope.form.mediaTitle,
+                            mediaDescription: $scope.form.mediaDescription,
+                            mediaType: $scope.form.mediaType
                         }
                     });
-                }, function (response) {
-                    if (response.status > 0)
-                        $scope.errorMsg = response.status + ': ' + response.data;
-                }, function (evt) {
-                    file.progress = Math.min(100, parseInt(100.0 * evt.loaded / evt.total));
-                });
+
+                    file.upload.then(function (response) {
+                        $timeout(function () {
+                            apiResponse(response,'edit');
+                            $scope.mm_files_count ++;
+                            file.result = response.data;
+                            if(mu_files_list.length == $scope.mm_files_count){
+                                $scope.loadAlbum($scope.dirNow);
+                                $scope.changeView('list');
+                                showHideLoad(true);
+                            }
+                        });
+                    }, function (response) {
+                        if (response.status > 0)
+                            $scope.errorMsg = response.status + ': ' + response.data;
+                    }, function (evt) {
+                        file.progress = Math.min(100, parseInt(100.0 * evt.loaded / evt.total));
+                    });
+                }
             }
             
         });
@@ -5007,13 +5969,46 @@ OraSchool.controller('academicYearController', function(dataFactory,$rootScope,$
     }
 });
 
-OraSchool.controller('vacationController', function(dataFactory,$rootScope,$scope) {
+OraSchool.controller('vacationController', function(dataFactory,$rootScope,$scope,$route) {
     $scope.views = {};
-    $scope.views.list = true;
     $scope.form = {};
     $scope.vacation ;
+    $scope.vacation_requests = {};
+    $scope.my_requests = {};
+    var methodName = $route.current.methodName;
 
-    showHideLoad(true);
+    if(methodName == "approve"){
+        $scope.views.list_approve = true;
+        showHideLoad();
+        dataFactory.httpRequest('index.php/vacation/approve').then(function(data) {
+            $scope.vacation_requests = data;
+            showHideLoad(true);
+        });
+    }else if(methodName == "mine"){
+        $scope.views.list_mine = true;
+        showHideLoad();
+        dataFactory.httpRequest('index.php/vacation/mine').then(function(data) {
+            $scope.my_requests = data;
+            showHideLoad(true);
+        });
+    }else{
+        $scope.views.list = true;
+        showHideLoad(true);
+    }
+
+    $scope.approveVacation = function(userid,status,index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/vacation/approve','POST',{},{'id':userid,'status':status}).then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                console.log(index);
+                $scope.vacation_requests.splice(index,1);
+                console.log($scope.vacation_requests);
+            }
+            showHideLoad(true);
+        });
+    }
+
     $scope.getVacation = function(){
         showHideLoad();
         dataFactory.httpRequest('index.php/vacation','POST',{},$scope.form).then(function(data) {
@@ -5043,6 +6038,8 @@ OraSchool.controller('vacationController', function(dataFactory,$rootScope,$scop
         }
         $scope.views.list = false;
         $scope.views.lists = false;
+        $scope.views.list_approve = false;
+        $scope.views.list_mine = false;
         $scope.views[view] = true;
     }
 });
@@ -5070,7 +6067,7 @@ OraSchool.controller('hostelController', function(dataFactory,$rootScope,$scope)
 
     $scope.saveAdd = function(){
         showHideLoad();
-        dataFactory.httpRequest('index.php/hostel','POST',{},$scope.form).then(function(data) {
+        dataFactory.httpRequest('index.php/hostel','POST',{},$scope.form,"managerPhoto").then(function(data) {
             response = apiResponse(data,'add');
             if(data.status == "success"){
                 $scope.hostelList.push(response);
@@ -5091,7 +6088,7 @@ OraSchool.controller('hostelController', function(dataFactory,$rootScope,$scope)
 
     $scope.saveEdit = function(){
         showHideLoad();
-        dataFactory.httpRequest('index.php/hostel/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+        dataFactory.httpRequest('index.php/hostel/'+$scope.form.id,'POST',{},$scope.form,"managerPhoto").then(function(data) {
             response = apiResponse(data,'edit');
             if(data.status == "success"){
                 $scope.hostelList = apiModifyTable($scope.hostelList,response.id,response);
@@ -5210,6 +6207,7 @@ OraSchool.controller('expensesController', function(dataFactory,$rootScope,$scop
             $scope.expenses = data.expenses;
             $scope.totalItems = data.totalItems;
             $scope.expenses_cat = data.expenses_cat;
+            $scope.totalExpenses = data.totalExpenses;
             showHideLoad(true);
         });
     }
@@ -5760,6 +6758,7 @@ OraSchool.controller('incomesController', function(dataFactory,$rootScope,$scope
         dataFactory.httpRequest('index.php/incomes/listAll/'+pageNumber).then(function(data) {
             $scope.incomes = data.incomes;
             $scope.totalItems = data.totalItems;
+            $scope.totalIncome = data.totalIncome;
             $scope.income_cat = data.income_cat;
             showHideLoad(true);
         });
@@ -6185,6 +7184,7 @@ OraSchool.controller('dbexportsController', function(dataFactory,$rootScope,$sco
     $scope.formS = {};
     $scope.sendNewScope = "form";
 
+    showHideLoad(true);
     $scope.loadNotifications = function(page){
         dataFactory.httpRequest('index.php/mobileNotif/listAll/' + page).then(function(data) {
             $scope.subject_list = data.subject_list;
@@ -6639,7 +7639,7 @@ OraSchool.controller('users_salaryController', function(dataFactory,$scope) {
     }
 });
 
-OraSchool.controller('payroll_make_payController', function(dataFactory,$scope) {
+OraSchool.controller('payroll_make_payController', function(dataFactory,$rootScope,$scope) {
     $scope.views = {};
     $scope.form = {};
     $scope.views.list = true;
@@ -6701,6 +7701,20 @@ OraSchool.controller('payroll_make_payController', function(dataFactory,$scope) 
         }
     }
 
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/make_payment/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.user_data.history.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
     $scope.changeView = function(view){
         $scope.views.list = false;
         $scope.views.make_payment = false;
@@ -6708,3 +7722,2180 @@ OraSchool.controller('payroll_make_payController', function(dataFactory,$scope) 
     }
 });
 
+OraSchool.controller('rolesController', function(dataFactory,$sce,$rootScope,$scope) {
+    $scope.roles = {};
+    $scope.roles_perms = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/roles/listAll').then(function(data) {
+            $scope.roles = data.roles;
+            $scope.roles_perms = data.roles_perms;
+            showHideLoad(true);
+        });
+    }
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/roles','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/roles/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.roles.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/roles/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/roles/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/roles/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('wel_office_cat', function(dataFactory,$sce,$rootScope,$scope) {
+    $scope.wel_office = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/wel_office_cat/listAll').then(function(data) {
+            $scope.wel_office = data.wel_office;
+            showHideLoad(true);
+        });
+    }
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/wel_office_cat','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/wel_office_cat/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.wel_office.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/wel_office_cat/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/wel_office_cat/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/wel_office_cat/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('visitors', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.visitors = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.visitorsTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/visitors/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.visitors = data.visitors;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/visitors/listAll/'+pageNumber).then(function(data) {
+                $scope.visitors = data.visitors;
+                if( pageNumber == 1){
+                    $scope.wel_office = data.wel_office;
+                }
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.visitorsTemp)){
+                $scope.visitorsTemp = $scope.visitors;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.visitors = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.visitorsTemp)){
+                $scope.visitors = $scope.visitorsTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.visitorsTemp = {};
+            }
+        }
+    }
+
+    
+    $scope.view_details = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/visitors/view/'+id).then(function(data) {
+            $scope.form = data;
+            $scope.changeView('view');
+            showHideLoad(true);
+        });
+    }
+
+    if($routeParams.viewId){
+        $scope.view_details($routeParams.viewId);
+    }else{
+        $scope.load_data();
+    }
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/visitors','POST',{},$scope.form,"docs,").then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/visitors/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.visitors.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/visitors/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/visitors/'+$scope.form.id,'POST',{},$scope.form,"docs,").then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/visitors/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.openSearchModal_student = function(){
+        $scope.modalTitle = $rootScope.phrase.searchUsers;
+        $scope.showUsrSearchModal_student = !$scope.showUsrSearchModal_student;
+    }
+
+    $scope.searchUserButton_student = function(){
+        var searchAbout = $("#searchLink_student").val();
+        if(searchAbout.length < 3){
+            alert($rootScope.phrase.minCharLength3);
+            return;
+        }
+        dataFactory.httpRequest("index.php/visitors/searchUser/"+searchAbout).then(function(data) {
+            $scope.searchResults_student = data;
+        });
+    }
+
+    $scope.serachUserFinish_student = function(user){
+        if(typeof $scope.form.student == "undefined"){
+            $scope.form.student = [];
+        }
+        $scope.form.student.push({"user":user.name,"id": "" + user.id + "" });
+        $scope.form.student_ser = JSON.stringify($scope.form.student);
+        $scope.showUsrSearchModal_student = !$scope.showUsrSearchModal_student;
+    }
+
+    $scope.removeUserSearch_student = function(user_id){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            for (x in $scope.form.student) {
+                if($scope.form.student[x].id == user_id){
+                    $scope.form.student.splice(x,1);
+                    $scope.form.student_ser = JSON.stringify($scope.form.student);
+                    break;
+                }
+            }
+        }
+    }
+
+    $scope.openSearchModal_to_meet = function(){
+        $scope.modalTitle = $rootScope.phrase.searchUsers;
+        $scope.showUsrSearchModal_to_meet = !$scope.showUsrSearchModal_to_meet;
+    }
+
+    $scope.searchUserButton_to_meet = function(){
+        var searchAbout = $("#searchLink_to_meet").val();
+        if(searchAbout.length < 3){
+            alert($rootScope.phrase.minCharLength3);
+            return;
+        }
+        dataFactory.httpRequest("index.php/visitors/searchUser/"+searchAbout).then(function(data) {
+            $scope.searchResults_to_meet = data;
+        });
+    }
+
+    $scope.serachUserFinish_to_meet = function(user){
+        if(typeof $scope.form.to_meet == "undefined"){
+            $scope.form.to_meet = [];
+        }
+        $scope.form.to_meet.push({"user":user.name,"id": "" + user.id + "" });
+        $scope.form.to_meet_ser = JSON.stringify($scope.form.to_meet);
+        $scope.showUsrSearchModal_to_meet = !$scope.showUsrSearchModal_to_meet;
+    }
+
+    $scope.removeUserSearch_to_meet = function(user_id){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            for (x in $scope.form.to_meet) {
+                if($scope.form.to_meet[x].id == user_id){
+                    $scope.form.to_meet.splice(x,1);
+                    $scope.form.to_meet_ser = JSON.stringify($scope.form.to_meet);
+                    break;
+                }
+            }
+        }
+    }
+
+    $scope.check_out = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/visitors/'+id).then(function(data) {
+            $scope.modalTitle = $rootScope.phrase.chkout;
+            $scope.chkout_modal = !$scope.chkout_modal;
+            $scope.modalClass = "modal-lg";
+            $scope.form = data;
+            $scope.form.check_out = {};
+            showHideLoad(true);
+        });
+    }
+
+    $scope.check_out_apply = function(){
+        dataFactory.httpRequest('index.php/visitors/checkout/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.chkout_modal = !$scope.chkout_modal;
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('phone_calls', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.phone_calls = {};
+    $scope.wel_office = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.phone_callsTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/phone_calls/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.phone_calls = data.phone_calls;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/phone_calls/listAll/'+pageNumber).then(function(data) {
+                $scope.phone_calls = data.phone_calls;
+                if( pageNumber == 1){
+                    $scope.wel_office = data.wel_office;
+                }
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.phone_callsTemp)){
+                $scope.phone_callsTemp = $scope.phone_calls;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.phone_calls = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.phone_callsTemp)){
+                $scope.phone_calls = $scope.phone_callsTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.phone_callsTemp = {};
+            }
+        }
+    }
+
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/phone_calls','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/phone_calls/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.phone_calls.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/phone_calls/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/phone_calls/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/phone_calls/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            $scope.call_details = "";
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('postal', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.postal = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.postalTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/postal/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.postal = data.postal;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/postal/listAll/'+pageNumber).then(function(data) {
+                $scope.postal = data.postal;
+                
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.postalTemp)){
+                $scope.postalTemp = $scope.postal;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.postal = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.postalTemp)){
+                $scope.postal = $scope.postalTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.postalTemp = {};
+            }
+        }
+    }
+
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/postal','POST',{},$scope.form,"attachment,").then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/postal/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.postal.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/postal/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/postal/'+$scope.form.id,'POST',{},$scope.form,"attachment,").then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/postal/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            $scope.postal_desc = "";
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('con_mess', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.contact_messages = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.contact_messagesTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/con_mess/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.contact_messages = data.contact_messages;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/con_mess/listAll/'+pageNumber).then(function(data) {
+                $scope.contact_messages = data.contact_messages;
+                
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.contact_messagesTemp)){
+                $scope.contact_messagesTemp = $scope.contact_messages;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.contact_messages = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.contact_messagesTemp)){
+                $scope.contact_messages = $scope.contact_messagesTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.contact_messagesTemp = {};
+            }
+        }
+    }
+
+    
+    $scope.view_details = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/con_mess/view/'+id).then(function(data) {
+            $scope.form = data;
+            $scope.changeView('view');
+            showHideLoad(true);
+        });
+    }
+
+    if($routeParams.viewId){
+        $scope.view_details($routeParams.viewId);
+    }else{
+        $scope.load_data();
+    }
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/con_mess','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/con_mess/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.contact_messages.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/con_mess/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/con_mess/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/con_mess/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('departments', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.departments = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/departments/listAll').then(function(data) {
+            $scope.departments = data.departments;
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/departments','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/departments/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.departments.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/departments/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/departments/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/departments/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('designations', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.designations = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/designations/listAll').then(function(data) {
+            $scope.designations = data.designations;
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/designations','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/designations/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.designations.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/designations/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/designations/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/designations/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('enquiries', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.enquiries = {};
+    $scope.enq_type = {};
+    $scope.enq_source = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.enquiriesTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/enquiries/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.enquiries = data.enquiries;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/enquiries/listAll/'+pageNumber).then(function(data) {
+                $scope.enquiries = data.enquiries;
+                if( pageNumber == 1){
+                    $scope.enq_type = data.enq_type;
+                    $scope.enq_source = data.enq_source;
+                }
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.enquiriesTemp)){
+                $scope.enquiriesTemp = $scope.enquiries;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.enquiries = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.enquiriesTemp)){
+                $scope.enquiries = $scope.enquiriesTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.enquiriesTemp = {};
+            }
+        }
+    }
+
+    
+    $scope.view_details = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/enquiries/view/'+id).then(function(data) {
+            $scope.form = data;
+            $scope.changeView('view');
+            showHideLoad(true);
+        });
+    }
+
+    if($routeParams.viewId){
+        $scope.view_details($routeParams.viewId);
+    }else{
+        $scope.load_data();
+    }
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/enquiries','POST',{},$scope.form,"enq_file,").then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/enquiries/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.enquiries.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/enquiries/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/enquiries/'+$scope.form.id,'POST',{},$scope.form,"enq_file,").then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/enquiries/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            $scope.enq_desc = "";
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('complaints', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.complaints = {};
+    $scope.comp_type = {};
+    $scope.comp_source = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.complaintsTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/complaints/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.complaints = data.complaints;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/complaints/listAll/'+pageNumber).then(function(data) {
+                $scope.complaints = data.complaints;
+                if( pageNumber == 1){
+                    $scope.comp_type = data.comp_type;
+                    $scope.comp_source = data.comp_source;
+                }
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.complaintsTemp)){
+                $scope.complaintsTemp = $scope.complaints;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.complaints = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.complaintsTemp)){
+                $scope.complaints = $scope.complaintsTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.complaintsTemp = {};
+            }
+        }
+    }
+
+    
+    $scope.view_details = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/complaints/view/'+id).then(function(data) {
+            $scope.form = data;
+            $scope.changeView('view');
+            showHideLoad(true);
+        });
+    }
+
+    if($routeParams.viewId){
+        $scope.view_details($routeParams.viewId);
+    }else{
+        $scope.load_data();
+    }
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/complaints','POST',{},$scope.form,"enq_file,").then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/complaints/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.complaints.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/complaints/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/complaints/'+$scope.form.id,'POST',{},$scope.form,"enq_file,").then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/complaints/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            $scope.comp_desc = "";
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('inv_cat', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.inv_cat = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/inv_cat/listAll').then(function(data) {
+            $scope.inv_cat = data.inv_cat;
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/inv_cat','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/inv_cat/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.inv_cat.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/inv_cat/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/inv_cat/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/inv_cat/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('suppliers', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.suppliers = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.suppliersTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/suppliers/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.suppliers = data.suppliers;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/suppliers/listAll/'+pageNumber).then(function(data) {
+                $scope.suppliers = data.suppliers;
+                
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.suppliersTemp)){
+                $scope.suppliersTemp = $scope.suppliers;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.suppliers = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.suppliersTemp)){
+                $scope.suppliers = $scope.suppliersTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.suppliersTemp = {};
+            }
+        }
+    }
+
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/suppliers','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/suppliers/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.suppliers.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/suppliers/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/suppliers/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/suppliers/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+OraSchool.controller('stocksstores', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.stores = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/stores/listAll').then(function(data) {
+            $scope.stores = data.stores;
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/stores','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/stores/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.stores.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/stores/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/stores/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/stores/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('items_code', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.items_code = {};
+    $scope.inv_cat = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.items_codeTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/items_code/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.items_code = data.items_code;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/items_code/listAll/'+pageNumber).then(function(data) {
+                $scope.items_code = data.items_code;
+                if( pageNumber == 1){
+                    $scope.inv_cat = data.inv_cat;
+                }
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.items_codeTemp)){
+                $scope.items_codeTemp = $scope.items_code;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.items_code = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.items_codeTemp)){
+                $scope.items_code = $scope.items_codeTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.items_codeTemp = {};
+            }
+        }
+    }
+
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/items_code','POST',{},$scope.form).then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/items_code/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.items_code.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/items_code/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/items_code/'+$scope.form.id,'POST',{},$scope.form).then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/items_code/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('items_stock', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.items_stock = {};
+    $scope.inv_cat = {};
+    $scope.items_code = {};
+    $scope.items_code_edit = {};
+    $scope.stores = {};
+    $scope.suppliers = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.items_stockTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/items_stock/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.items_stock = data.items_stock;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/items_stock/listAll/'+pageNumber).then(function(data) {
+                $scope.items_stock = data.items_stock;
+                if( pageNumber == 1){
+                    $scope.inv_cat = data.inv_cat;
+                    $scope.items_code = data.items_code;
+                    $scope.stores = data.stores;
+                    $scope.suppliers = data.suppliers;
+                }
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.items_stockTemp)){
+                $scope.items_stockTemp = $scope.items_stock;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.items_stock = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.items_stockTemp)){
+                $scope.items_stock = $scope.items_stockTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.items_stockTemp = {};
+            }
+        }
+    }
+
+    $scope.load_data();
+
+    $scope.load_items = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/items_stock/load_items/'+$scope.form.cat_id,'POST').then(function(data) {
+            $scope.items_code_edit = data;
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/items_stock','POST',{},$scope.form,"stock_attach,").then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/items_stock/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.items_stock.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/items_stock/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            $scope.load_items();
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/items_stock/'+$scope.form.id,'POST',{},$scope.form,"stock_attach,").then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/items_stock/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('inv_issue', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.inv_issue = {};
+    $scope.inv_cat = {};
+    $scope.items_code = {};
+    $scope.items_code_edit = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    $scope.load_data = function(pageNumber) {
+
+        if(typeof pageNumber == "undefined"){
+            pageNumber = $scope.pageNumber;
+        }
+        $scope.pageNumber = pageNumber;
+
+        if(! $.isEmptyObject($scope.inv_issueTemp)){
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/inv_issue/search/'+$scope.searchText+'/'+pageNumber).then(function(data) {
+                $scope.inv_issue = data.inv_issue;
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+
+        }else{
+
+            showHideLoad();
+            dataFactory.httpRequest('index.php/inv_issue/listAll/'+pageNumber).then(function(data) {
+                $scope.inv_issue = data.inv_issue;
+                if( pageNumber == 1){
+                    $scope.inv_cat = data.inv_cat;
+                $scope.items_code = data.items_code;
+                }
+                $scope.totalItems = data.totalItems;
+                showHideLoad(true);
+            });
+            
+        }
+    }
+
+    $scope.pageChanged = function(newPage) {
+        $scope.load_data(newPage);
+    };
+
+    $scope.searchDB = function(){
+        if($scope.searchText.length >= 3){
+            if($.isEmptyObject($scope.inv_issueTemp)){
+                $scope.inv_issueTemp = $scope.inv_issue;
+                $scope.totalItemsTemp = $scope.totalItems;
+                $scope.inv_issue = {};
+            }
+            $scope.load_data(1);
+        }else{
+            if(! $.isEmptyObject($scope.inv_issueTemp)){
+                $scope.inv_issue = $scope.inv_issueTemp;
+                $scope.totalItems = $scope.totalItemsTemp;
+                $scope.inv_issueTemp = {};
+            }
+        }
+    }
+
+    $scope.load_data();
+
+    $scope.load_items = function(){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/inv_issue/load_items/'+$scope.form.item_cat,'POST').then(function(data) {
+            $scope.items_code_edit = data;
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/inv_issue','POST',{},$scope.form,"attachment,").then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/inv_issue/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.inv_issue.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/inv_issue/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/inv_issue/'+$scope.form.id,'POST',{},$scope.form,"attachment,").then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.return_item = function(id){
+        var confirmRemove = confirm($rootScope.phrase.sureReturn);
+        if (confirmRemove == true) {
+            dataFactory.httpRequest('index.php/inv_issue/return/'+id,'POST',{},{}).then(function(data) {
+                showHideLoad();
+
+                response = apiResponse(data,'edit');
+                if(data.status == "success"){
+                    $scope.load_data();
+                    $scope.changeView('list');
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.openSearchModal_issue_tu = function(){
+        $scope.modalTitle = $rootScope.phrase.searchUsers;
+        $scope.showUsrSearchModal_issue_tu = !$scope.showUsrSearchModal_issue_tu;
+    }
+
+    $scope.searchUserButton_issue_tu = function(){
+        var searchAbout = $("#searchLink_issue_tu").val();
+        if(searchAbout.length < 3){
+            alert($rootScope.phrase.minCharLength3);
+            return;
+        }
+        dataFactory.httpRequest("index.php/inv_issue/searchUser/"+searchAbout).then(function(data) {
+            $scope.searchResults_issue_tu = data;
+        });
+    }
+
+    $scope.serachUserFinish_issue_tu = function(user){
+        $scope.form.issue_tu = [];
+        $scope.form.issue_tu.push({"user":user.name,"id": "" + user.id + "" });
+        $scope.form.issue_tu_ser = JSON.stringify($scope.form.issue_tu);
+        $scope.showUsrSearchModal_issue_tu = !$scope.showUsrSearchModal_issue_tu;
+    }
+
+    $scope.removeUserSearch_issue_tu = function(user_id){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            for (x in $scope.form.issue_tu) {
+                if($scope.form.issue_tu[x].id == user_id){
+                    $scope.form.issue_tu.splice(x,1);
+                    $scope.form.issue_tu_ser = JSON.stringify($scope.form.issue_tu);
+                    break;
+                }
+            }
+        }
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});
+
+OraSchool.controller('certificatesController', function(dataFactory,$sce,$rootScope,$scope,$routeParams) {
+    $scope.certificates = {};
+    $scope.views = {};
+    $scope.views.list = true;
+    $scope.pageNumber = 1;
+    $scope.form = {};
+    
+    
+    $scope.load_data = function(){
+        dataFactory.httpRequest('index.php/certificates/listAll').then(function(data) {
+            $scope.certificates = data.certificates;
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.load_data();
+    
+    $scope.saveAdd = function(data){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/certificates','POST',{},$scope.form,"certificate_image,").then(function(data) {
+            response = apiResponse(data,'add');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.remove = function(item,index){
+        var confirmRemove = confirm($rootScope.phrase.sureRemove);
+        if (confirmRemove == true) {
+            showHideLoad();
+            dataFactory.httpRequest('index.php/certificates/delete/'+item.id,'POST').then(function(data) {
+                response = apiResponse(data,'remove');
+                if(data.status == "success"){
+                    $scope.certificates.splice(index,1);
+                }
+                showHideLoad(true);
+            });
+        }
+    }
+
+    $scope.edit = function(id){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/certificates/'+id).then(function(data) {
+            $scope.changeView('edit');
+            $scope.form = data;
+            showHideLoad(true);
+        });
+    }
+
+    $scope.saveEdit = function(data){
+        dataFactory.httpRequest('index.php/certificates/'+$scope.form.id,'POST',{},$scope.form,"certificate_image,").then(function(data) {
+            showHideLoad();
+
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+                $scope.changeView('list');
+            }
+            showHideLoad(true);
+        });
+    }
+
+    $scope.status =function(id,$index){
+        showHideLoad();
+        dataFactory.httpRequest('index.php/certificates/active/'+id,'POST').then(function(data) {
+            response = apiResponse(data,'edit');
+            if(data.status == "success"){
+                $scope.load_data();
+            }
+            showHideLoad(true);
+        });
+    }
+    
+    $scope.changeView = function(view){
+        if(view == "add" || view == "list" || view == "show"){
+            $scope.form = {};
+            $scope.header_left = "";$scope.header_right = "";$scope.header_middle = "";$scope.main_title = "";$scope.main_content = "";$scope.footer_left = "";$scope.footer_right = "";$scope.footer_middle = "";
+        }
+        $scope.views.list = false;
+        $scope.views.add = false;
+        $scope.views.edit = false;
+        $scope.views.view = false;
+        $scope.views[view] = true;
+    }
+});

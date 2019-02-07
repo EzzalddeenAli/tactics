@@ -8,7 +8,7 @@ class AdminsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,19 +21,27 @@ class AdminsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
-
-		if(!$this->panelInit->hasThePerm('Administrators')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
-		return \User::where('role','admin')->get();
+		if(!$this->panelInit->can( array("Administrators.list","Administrators.addAdministrator","Administrators.editAdministrator","Administrators.delAdministrator") )){
+			exit;
+		}
+
+		$to_return = array();
+		$to_return['admins'] = \User::where('role','admin')->get();
+		$to_return['roles'] = \roles::select('id','role_title')->get();
+
+		return $to_return;
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "Administrators.delAdministrator" )){
+			exit;
+		}
+
 		if($id == $this->data['users']->id){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['delAdministrator'],"You can't delete yourself !");
 		}
@@ -47,6 +55,11 @@ class AdminsController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "Administrators.addAdministrator" )){
+			exit;
+		}
+
 		if(\User::where('username',trim(\Input::get('username')))->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['addAdministrator'],$this->panelInit->language['usernameAlreadyUsed']);
 		}
@@ -61,6 +74,7 @@ class AdminsController extends Controller {
 		$User->customPermissionsType = \Input::get('customPermissionsType');
 		$User->customPermissions = json_encode(\Input::get('customPermissions'));
 		$User->role = "admin";
+		$User->role_perm = \Input::get('role_perm');
 		if(\Input::has('comVia')){
 			$User->comVia = json_encode(\Input::get('comVia'));
 		}
@@ -69,6 +83,11 @@ class AdminsController extends Controller {
 
 		if (\Input::hasFile('photo')) {
 			$fileInstance = \Input::file('photo');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addAdministrator'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = "profile_".$User->id.".jpg";
 			$file = $fileInstance->move('uploads/profile/',$newFileName);
 
@@ -80,6 +99,11 @@ class AdminsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "Administrators.editAdministrator" )){
+			exit;
+		}
+
 		$user = \User::where('role','admin')->where('id',$id)->first()->toArray();
 		$user['customPermissions'] = json_decode($user['customPermissions'],true);
 		if(!is_array($user['customPermissions'])){
@@ -93,6 +117,11 @@ class AdminsController extends Controller {
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "Administrators.editAdministrator" )){
+			exit;
+		}
+
 		if(\User::where('username',trim(\Input::get('username')))->where('id','<>',$id)->count() > 0){
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['editAdministrator'],$this->panelInit->language['usernameAlreadyUsed']);
 		}
@@ -108,6 +137,11 @@ class AdminsController extends Controller {
 		}
 		if (\Input::hasFile('photo')) {
 			$fileInstance = \Input::file('photo');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addAdministrator'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
 			$newFileName = "profile_".$User->id.".jpg";
 			$file = $fileInstance->move('uploads/profile/',$newFileName);
 
@@ -118,12 +152,18 @@ class AdminsController extends Controller {
 		if(\Input::has('comVia')){
 			$User->comVia = json_encode(\Input::get('comVia'));
 		}
+		$User->role_perm = \Input::get('role_perm');
 		$User->save();
 
 		return $this->panelInit->apiOutput(true,$this->panelInit->language['editAdministrator'],$this->panelInit->language['adminUpdated'],$User->toArray());
 	}
 
 	function account_status($id){
+
+		if(!$this->panelInit->can( "Administrators.editAdministrator" )){
+			exit;
+		}
+		
 		$user = \User::where('role','admin')->where('id',$id)->first();
 
 		if($id == $this->data['users']->id){

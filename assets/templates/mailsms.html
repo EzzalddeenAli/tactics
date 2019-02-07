@@ -54,7 +54,7 @@
                                                     {{phrase.parents}}
                                                 </label>
                                             </div>
-                                            <div class="radio-list" ng-show="$root.dashboardData.role == 'admin'">
+                                            <div class="radio-list" ng-show="$root.dashboardData.role == 'admin' || $root.dashboardData.role == 'teacher'">
                                                 <label>
                                                     <input type="radio" name="userType" value="users" ng-model="form.userType" required >
                                                     {{phrase.specificUsers}}

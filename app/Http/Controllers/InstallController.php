@@ -13,6 +13,8 @@ class InstallController extends Controller {
 
 	public function index($method = "main")
 	{
+		@ini_set('max_execution_time', 0);
+		
 		try{
 			if(\Schema::hasTable('settings')){
 				$testInstalled = \settings::where('fieldName','finishInstall')->first();
@@ -21,7 +23,7 @@ class InstallController extends Controller {
 					$testInstalled2 = \settings::where('fieldName','thisVersion');
 					if($testInstalled2->count() > 0){
 						$testInstalled2 = $testInstalled2->first();
-						if($testInstalled2->fieldValue != 4.0){
+						if($testInstalled2->fieldValue != 5.0){
 							return \Redirect::to('/upgrade');
 						}
 					}
@@ -53,19 +55,27 @@ class InstallController extends Controller {
 			$testData = uniqid();
 
 			@file_put_contents("uploads/assignments/test", $testData);
+			@file_put_contents("uploads/assignmentsAnswers/test", $testData);
 			@file_put_contents("uploads/books/test", $testData);
 			@file_put_contents("uploads/cache/test", $testData);
-			@file_put_contents("uploads/media/test", $testData);
-			@file_put_contents("uploads/profile/test", $testData);
-			@file_put_contents("uploads/studyMaterial/test", $testData);
-			@file_put_contents("uploads/assignmentsAnswers/test", $testData);
-			@file_put_contents("uploads/onlineExams/test", $testData);
+			@file_put_contents("uploads/cert/test", $testData);
+			@file_put_contents("uploads/enquiries/test", $testData);
+			@file_put_contents("uploads/events/test", $testData);
 			@file_put_contents("uploads/expenses/test", $testData);
 			@file_put_contents("uploads/homeworks/test", $testData);
+			@file_put_contents("uploads/hostel/test", $testData);
 			@file_put_contents("uploads/income/test", $testData);
+			@file_put_contents("uploads/media/test", $testData);
 			@file_put_contents("uploads/ml_uploads/test", $testData);
-			@file_put_contents("uploads/events/test", $testData);
 			@file_put_contents("uploads/news/test", $testData);
+			@file_put_contents("uploads/onlineExams/test", $testData);
+			@file_put_contents("uploads/postal/test", $testData);
+			@file_put_contents("uploads/profile/test", $testData);
+			@file_put_contents("uploads/stock/test", $testData);
+			@file_put_contents("uploads/student_docs/test", $testData);
+			@file_put_contents("uploads/studyMaterial/test", $testData);
+			@file_put_contents("uploads/transport/test", $testData);
+			@file_put_contents("uploads/visitors/test", $testData);
 
 			@file_put_contents("storage/app/test", $testData);
 			@file_put_contents("storage/framework/test", $testData);
@@ -76,6 +86,13 @@ class InstallController extends Controller {
 				$this->data['nextStep'] = "1";
 			}else{
 				$this->data['success'][] = "uploads/assignments";
+			}
+
+			if(@file_get_contents("uploads/assignmentsAnswers/test") != $testData){
+				$this->data['perrors'][] = "uploads/assignmentsAnswers";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/assignmentsAnswers";
 			}
 
 			if(@file_get_contents("uploads/books/test") != $testData){
@@ -92,39 +109,25 @@ class InstallController extends Controller {
 				$this->data['success'][] = "uploads/cache";
 			}
 
-			if(@file_get_contents("uploads/media/test") != $testData){
-				$this->data['perrors'][] = "uploads/media";
+			if(@file_get_contents("uploads/cert/test") != $testData){
+				$this->data['perrors'][] = "uploads/cert";
 				$this->data['nextStep'] = "1";
 			}else{
-				$this->data['success'][] = "uploads/media";
+				$this->data['success'][] = "uploads/cert";
 			}
 
-			if(@file_get_contents("uploads/profile/test") != $testData){
-				$this->data['perrors'][] = "uploads/profile";
+			if(@file_get_contents("uploads/enquiries/test") != $testData){
+				$this->data['perrors'][] = "uploads/enquiries";
 				$this->data['nextStep'] = "1";
 			}else{
-				$this->data['success'][] = "uploads/profile";
+				$this->data['success'][] = "uploads/enquiries";
 			}
 
-			if(@file_get_contents("uploads/studyMaterial/test") != $testData){
-				$this->data['perrors'][] = "uploads/studyMaterial";
+			if(@file_get_contents("uploads/events/test") != $testData){
+				$this->data['perrors'][] = "uploads/events";
 				$this->data['nextStep'] = "1";
 			}else{
-				$this->data['success'][] = "uploads/studyMaterial";
-			}
-
-			if(@file_get_contents("uploads/assignmentsAnswers/test") != $testData){
-				$this->data['perrors'][] = "uploads/assignmentsAnswers";
-				$this->data['nextStep'] = "1";
-			}else{
-				$this->data['success'][] = "uploads/assignmentsAnswers";
-			}
-
-			if(@file_get_contents("uploads/onlineExams/test") != $testData){
-				$this->data['perrors'][] = "uploads/onlineExams";
-				$this->data['nextStep'] = "1";
-			}else{
-				$this->data['success'][] = "uploads/onlineExams";
+				$this->data['success'][] = "uploads/events";
 			}
 
 			if(@file_get_contents("uploads/expenses/test") != $testData){
@@ -141,11 +144,25 @@ class InstallController extends Controller {
 				$this->data['success'][] = "uploads/homeworks";
 			}
 
+			if(@file_get_contents("uploads/hostel/test") != $testData){
+				$this->data['perrors'][] = "uploads/hostel";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/hostel";
+			}
+
 			if(@file_get_contents("uploads/income/test") != $testData){
 				$this->data['perrors'][] = "uploads/income";
 				$this->data['nextStep'] = "1";
 			}else{
 				$this->data['success'][] = "uploads/income";
+			}
+
+			if(@file_get_contents("uploads/media/test") != $testData){
+				$this->data['perrors'][] = "uploads/media";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/media";
 			}
 
 			if(@file_get_contents("uploads/ml_uploads/test") != $testData){
@@ -155,13 +172,6 @@ class InstallController extends Controller {
 				$this->data['success'][] = "uploads/ml_uploads";
 			}
 
-			if(@file_get_contents("uploads/events/test") != $testData){
-				$this->data['perrors'][] = "uploads/events";
-				$this->data['nextStep'] = "1";
-			}else{
-				$this->data['success'][] = "uploads/events";
-			}
-
 			if(@file_get_contents("uploads/news/test") != $testData){
 				$this->data['perrors'][] = "uploads/news";
 				$this->data['nextStep'] = "1";
@@ -169,6 +179,61 @@ class InstallController extends Controller {
 				$this->data['success'][] = "uploads/news";
 			}
 
+			if(@file_get_contents("uploads/onlineExams/test") != $testData){
+				$this->data['perrors'][] = "uploads/onlineExams";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/onlineExams";
+			}
+
+			if(@file_get_contents("uploads/postal/test") != $testData){
+				$this->data['perrors'][] = "uploads/postal";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/postal";
+			}
+
+			if(@file_get_contents("uploads/profile/test") != $testData){
+				$this->data['perrors'][] = "uploads/profile";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/profile";
+			}
+
+			if(@file_get_contents("uploads/stock/test") != $testData){
+				$this->data['perrors'][] = "uploads/stock";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/stock";
+			}
+
+			if(@file_get_contents("uploads/student_docs/test") != $testData){
+				$this->data['perrors'][] = "uploads/student_docs";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/student_docs";
+			}
+
+			if(@file_get_contents("uploads/studyMaterial/test") != $testData){
+				$this->data['perrors'][] = "uploads/studyMaterial";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/studyMaterial";
+			}
+
+			if(@file_get_contents("uploads/transport/test") != $testData){
+				$this->data['perrors'][] = "uploads/transport";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/transport";
+			}
+
+			if(@file_get_contents("uploads/visitors/test") != $testData){
+				$this->data['perrors'][] = "uploads/visitors";
+				$this->data['nextStep'] = "1";
+			}else{
+				$this->data['success'][] = "uploads/visitors";
+			}
 
 			if(@file_get_contents("storage/app/test") != $testData){
 				$this->data['perrors'][] = "storage/app";
@@ -252,6 +317,11 @@ class InstallController extends Controller {
 				$User->fullName = \Input::get('fullName');
 				$User->password = \Hash::make(\Input::get('password'));
 				$User->role = "admin";
+				$User->role_perm = 1;
+				$User->activated = 1;
+				$User->defLang = 1;
+				$User->defTheme = "blue";
+				$User->comVia = '["mail","sms","phone"]';
 				$User->customPermissionsType = "full";
 				$User->save();
 

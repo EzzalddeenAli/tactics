@@ -110,9 +110,9 @@
                                         </div>
                                     </li>
                                     <li role="separator" class="divider"></li>
-                                    <a href="#/account/invoices" class="dropdown-item"><i class="ti-wallet"></i> <?php echo $panelInit->language['myInvoices']; ?></a>
-                                    <a href="#/messages" class="dropdown-item"><i class="mdi mdi-message-text-outline"></i> <?php echo $panelInit->language['Messages']; ?></a>
-                                    <div class="dropdown-divider"></div> <a href="#/account" class="dropdown-item"><i class="ti-settings"></i> <?php echo $panelInit->language['AccountSettings']; ?></a>
+                                    <?php if($panelInit->can('AccountSettings.myInvoices')){ ?><a href="portal#/account/invoices" class="dropdown-item"><i class="ti-wallet"></i> <?php echo $panelInit->language['myInvoices']; ?></a><?php } ?>
+                                    <?php if($panelInit->can('AccountSettings.Messages')){ ?><a href="portal#/messages" class="dropdown-item"><i class="mdi mdi-message-text-outline"></i> <?php echo $panelInit->language['Messages']; ?></a><?php } ?>
+                                    <?php if($panelInit->can( array("AccountSettings.ChgProfileData","AccountSettings.chgEmailAddress","AccountSettings.chgPassword") )) { ?><div class="dropdown-divider"></div> <a href="portal#/account" class="dropdown-item"><i class="ti-settings"></i> <?php echo $panelInit->language['AccountSettings']; ?></a><?php } ?>
                                     <div class="dropdown-divider"></div> <a href="{{URL::to('/logout')}}" class="dropdown-item"><i class="fa fa-power-off"></i> <?php echo $panelInit->language['logout']; ?></a>
                                 </ul>
                             </div>
@@ -152,13 +152,13 @@
                 <!-- User profile -->
                 <div class="user-profile">
                     <!-- User profile image -->
-                    <div class="profile-img"> <img src="{{URL::to('/dashboard/profileImage/'.$users['id'])}}" alt="user" /> </div>
+                    <div class="profile-img"> <img src="{{URL::to('/dashboard/profileImage/'.$users['id'])}}" alt="user" width="50" height="50" /> </div>
                     <!-- User profile text-->
                     <div class="profile-text"> <a href="javascript:void(0)" class="dropdown-toggle link u-dropdown" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="true">{{$users['fullName']}} <span class="caret"></span></a>
                         <div class="dropdown-menu animated flipInY">
-                            <a href="#/account/invoices" class="dropdown-item"><i class="ti-wallet"></i> <?php echo $panelInit->language['myInvoices']; ?></a>
-                            <a href="#/messages" class="dropdown-item"><i class="mdi mdi-message-text-outline"></i> <?php echo $panelInit->language['Messages']; ?></a>
-                            <div class="dropdown-divider"></div> <a href="#/account" class="dropdown-item"><i class="ti-settings"></i> <?php echo $panelInit->language['AccountSettings']; ?></a>
+                            <?php if($panelInit->can('AccountSettings.myInvoices')){ ?><a href="portal#/account/invoices" class="dropdown-item"><i class="ti-wallet"></i> <?php echo $panelInit->language['myInvoices']; ?></a><?php } ?>
+                            <?php if($panelInit->can('AccountSettings.Messages')){ ?><a href="portal#/messages" class="dropdown-item"><i class="mdi mdi-message-text-outline"></i> <?php echo $panelInit->language['Messages']; ?></a><?php } ?>
+                            <?php if($panelInit->can( array("AccountSettings.ChgProfileData","AccountSettings.chgEmailAddress","AccountSettings.chgPassword") )) { ?><div class="dropdown-divider"></div> <a href="portal#/account" class="dropdown-item"><i class="ti-settings"></i> <?php echo $panelInit->language['AccountSettings']; ?></a><?php } ?>
                             <div class="dropdown-divider"></div> <a href="{{URL::to('/logout')}}" class="dropdown-item"><i class="fa fa-power-off"></i> <?php echo $panelInit->language['logout']; ?></a>
                         </div>
                     </div>
@@ -168,21 +168,15 @@
                 <nav class="sidebar-nav">
                     <ul id="sidebarnav" <?php if($panelInit->settingsArray['leftmenuScroller'] != "e"){ echo "style='padding-bottom:60px;'"; }?>>
                         <?php
-                        if($users->role == "admin" AND $users->customPermissionsType == "custom"){
-                            $userPerm = $users->customPermissionsAsJson();
-                            $performPermScan = true;
-                        }
-
+                        
                         foreach ($panelInit->panelItems as $key => $value) {
                             if(isset($value['activated']) AND !strpos($panelInit->settingsArray['activatedModules'],$value['activated']) ){ continue;  }
-                            if(!in_array($users->role, $value['permissions'])){
-                                continue;
-                            }
-                            if(isset($performPermScan) AND isset($value['cusPerm']) AND $value['cusPerm'] != ""){
-                                if(!in_array($value['cusPerm'],$userPerm)){
+                            if(isset($value['role_perm'])){
+                                if($panelInit->can($value['role_perm']) == false){
                                     continue;
                                 }
                             }
+
                             echo "<li><a ";
                             if(isset($value['children'])){
                                 echo "class='has-arrow'";
@@ -205,14 +199,12 @@
                                 echo '<ul aria-expanded="false" class="collapse">';
                                 foreach ($value['children'] as $key2 => $value2) {
                                     if(isset($value2['activated']) AND !strpos($panelInit->settingsArray['activatedModules'],$value2['activated']) ){ continue;  }
-                                    if(!in_array($users->role, $value2['permissions'])){
-                                        continue;
-                                    }
-                                    if(isset($performPermScan) AND isset($value2['cusPerm']) AND $value2['cusPerm'] != ""){
-                                        if(!in_array($value2['cusPerm'],$userPerm)){
+                                    if(isset($value2['role_perm'])){
+                                        if($panelInit->can($value2['role_perm']) == false){
                                             continue;
                                         }
                                     }
+
                                     echo "<li>";
                                     echo "<a class='aj scrollTop' href='".URL::to($value2['url'])."'>";
                                     if(isset($panelInit->language[$value2['title']])){
@@ -236,9 +228,9 @@
             <!-- Bottom points-->
             <div class="sidebar-footer">
                 <!-- item-->
-                <a href="{{URL::to('#/account')}}" class="link" data-toggle="tooltip" title="<?php echo $panelInit->language['AccountSettings']; ?>"><i class="ti-settings"></i></a>
+                <a href="{{URL::to('portal#/account')}}" class="link" data-toggle="tooltip" title="<?php echo $panelInit->language['AccountSettings']; ?>"><i class="ti-settings"></i></a>
                 <!-- item-->
-                <a href="{{URL::to('#/messages')}}" class="link" data-toggle="tooltip" title="<?php echo $panelInit->language['Messages']; ?>"><i class="mdi mdi-gmail"></i></a>
+                <a href="{{URL::to('portal#/messages')}}" class="link" data-toggle="tooltip" title="<?php echo $panelInit->language['Messages']; ?>"><i class="mdi mdi-gmail"></i></a>
                 <!-- item-->
                 <a href="{{URL::to('/logout')}}" class="link" data-toggle="tooltip" title="<?php echo $panelInit->language['logout']; ?>"><i class="mdi mdi-power"></i></a>
             </div>

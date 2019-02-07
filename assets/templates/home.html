@@ -7,7 +7,7 @@
     </div>
 </div>
 
-<div class="row" ng-show="dashboardData.role == 'admin'">
+<div class="row" ng-show="$root.can('dashboard.stats')">
     <!-- Column -->
     <div class="col-lg-3 col-md-6">
         <div class="card card-success">
@@ -83,7 +83,7 @@
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row">
-                    <div class=""><img ng-src="{{'index.php/dashboard/profileImage/'+dashboardData.baseUser.id}}" alt="user" class="img-circle" width="100"></div>
+                    <div class=""><img ng-src="{{'index.php/dashboard/profileImage/'+dashboardData.baseUser.id}}" alt="user" class="img-circle" width="100" height="100"></div>
                     <div class="p-l-20">
                         <h3 class="font-medium">{{dashboardData.baseUser.fullName}}</h3>
                         <h6>{{phrase.username}} : {{dashboardData.baseUser.username}}</h6>
@@ -96,8 +96,8 @@
                 <hr>
             </div>
             <div class="card-block">
-                <button onclick="location.href='#/account';" class="btn btn-block btn-primary waves-effect waves-light" type="button"><span class="pull-left"><i class="ti-settings"></i> {{phrase.AccountSettings}}</span></button>
-                <button ng-show="dashboardData.activatedModules.indexOf('messagesAct') > -1" onclick="location.href='#/messages';" class="btn btn-block btn-primary waves-effect waves-light" type="button"><span class="pull-left"><i class="mdi mdi-message-text-outline"></i> {{phrase.Messages}}</span></button>
+                <button onclick="location.href='portal#/account';" class="btn btn-block btn-primary waves-effect waves-light" type="button"><span class="pull-left"><i class="ti-settings"></i> {{phrase.AccountSettings}}</span></button>
+                <button ng-show="dashboardData.activatedModules.indexOf('messagesAct') > -1" onclick="location.href='portal#/messages';" class="btn btn-block btn-primary waves-effect waves-light" type="button"><span class="pull-left"><i class="mdi mdi-message-text-outline"></i> {{phrase.Messages}}</span></button>
                 <button onclick="location.href='logout';" class="btn btn-block btn-primary waves-effect waves-light" type="button"><span class="pull-left"><i class="fa fa-power-off"></i> {{phrase.logout}}</span></button>
             </div>
         </div>
@@ -105,7 +105,7 @@
     <div class="col-lg-4 col-md-3">
         <div class="card card-outline-primary">
             <div class="card-block">
-                <h4 class="card-title">{{phrase.studentLeaderboard}}</h4>
+                <h4 class="card-title"><i class="fa fa-trophy"></i> {{phrase.studentLeaderboard}}</h4>
                 <div class="message-box" scroll-box id="stdLdrBrd" height="255px">
                     <div class="message-widget message-scroll">
                         <!-- Message -->
@@ -124,7 +124,7 @@
     <div class="col-lg-4 col-md-3">
         <div class="card">
             <div class="card-block">
-                <h4 class="card-title">{{phrase.teacherLeaderboard}}</h4>
+                <h4 class="card-title"><i class="fa fa-trophy"></i> {{phrase.teacherLeaderboard}}</h4>
                 <div class="message-box" scroll-box id="tchLdrBrd" height="255px">
                     <div class="message-widget message-scroll">
                         <!-- Message -->
@@ -143,6 +143,60 @@
 
 </div>
 
+<div class="row">
+
+    <div class="col-lg-4 col-md-3">
+        <div class="card">
+            <div class="card-block">
+                <h4 class="card-title"><i class="fa fa-birthday-cake"></i> {{phrase.celebBirthday}}</h4>
+                <div class="message-box" scroll-box id="birthdayCeleb" height="255px">
+                    <div class="message-widget message-scroll">
+                        <!-- Message -->
+                        <a href="javascript:void(0)" ng-click="studentProfile( user.id )" ng-repeat="user in dashboardData.birthday">
+                            <div class="user-img"> <img ng-src="{{'index.php/dashboard/profileImage/'+user.id}}" alt="{{user.fullName}}" class="img-circle"> </div>
+                            <div class="mail-contnet">
+                                <h5>{{user.fullName}}</h5> Age : {{user.age}}
+                            </div>
+                        </a>
+                        <span style="display: block; text-align: center;padding:20px;" ng-show="!dashboardData.birthday.length">{{phrase.noDataAvailable}}</span>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8 col-md-9">
+        <div class="card">
+            <div class="card-block">
+                <h4 class="card-title"><i class="fa fa-link"></i> {{phrase.quicklinks}}</h4>
+                <div class="row">
+                    <div class="col-md-4" style="margin-bottom: 10px;"><a href="portal#/messages" class="btn btn-block btn-success"> {{phrase.Messages}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('newsboard')"><a href="portal#newsboard" class="btn btn-block btn-success"> {{phrase.newsboard}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('events')"><a href="portal#events" class="btn btn-block btn-success"> {{phrase.events}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('classSch')"><a href="portal#classschedule" class="btn btn-block btn-success"> {{phrase.ClassSchedule}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('mailsms')"><a href="portal#mailsms" class="btn btn-block btn-success"> {{phrase.mailsms}}</a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('mobileNotifications')"><a href="portal#mobileNotif" class="btn btn-block btn-success"> {{phrase.mobileNotifications}}</a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('Vacation.reqVacation')"><a href="portal#/vacation" class="btn btn-block btn-success"> {{phrase.reqVacation}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('staffAttendance')"><a href="portal#staffAttendance" class="btn btn-block btn-success"> {{phrase.staffAttendance}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('Attendance')"><a href="portal#attendance" class="btn btn-block btn-success"> {{phrase.Attendance}}</a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('Reports')"><a href="portal#reports" class="btn btn-block btn-success"> {{phrase.Reports}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('generalSettings')"><a href="portal#settings" class="btn btn-block btn-success"> {{phrase.generalSettings}}</a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('examsList')"><a href="portal#examsList" class="btn btn-block btn-success"> {{phrase.examsList}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('studyMaterial')"><a href="portal#materials" class="btn btn-block btn-success"> {{phrase.studyMaterial}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('Assignments')"><a href="portal#assignments" class="btn btn-block btn-success"> {{phrase.Assignments}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('Homework')"><a href="portal#homework" class="btn btn-block btn-success"> {{phrase.Homework}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('onlineExams')"><a href="portal#onlineExams" class="btn btn-block btn-success"> {{phrase.Onlineexams}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('students')"><a href="portal#students" class="btn btn-block btn-success"> {{phrase.students}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('classSch')"><a href="portal#/classschedule" class="btn btn-block btn-success"> {{phrase.classSch}} </a></div>
+                    <div class="col-md-4" style="margin-bottom: 10px;" ng-show="adminHasPerm('mediaCenter')"><a href="portal#/media" class="btn btn-block btn-success"> {{phrase.mediaCenter}} </a></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
 <div class="row" ng-show="dashboardData.invoices">
 
     <div class="col-12">
@@ -150,7 +204,7 @@
             <div class="row">
                 <div class="col-lg-8">
                     <div class="p-20">
-                        <h2 class="font-medium text-inverse">{{phrase.Invoices}}</h2>
+                        <h2 class="font-medium text-inverse"> <i class="mdi mdi-currency-usd"></i> {{phrase.Invoices}}</h2>
                         <table class="table table-hover">
                             <thead>
                                 <tr>
@@ -209,14 +263,14 @@
 
         <div class="card">
             <div class="card-block">
-                <h4 class="card-title">{{phrase.NewsEvents}}</h4>
+                <h4 class="card-title"> <i class="mdi mdi-bullhorn"></i> {{phrase.NewsEvents}}</h4>
             </div>
             <div class="table-responsive" scroll-box id="nwsEvts" height="300px">
                 <table class="table table-hover">
                     <tbody>
                         <tr ng-repeat="item in dashboardData.newsEvents">
-                            <td class="txt-oflo" ng-if="item.type == 'news'"><a href="#newsboard/{{item.id}}">{{item.title}}</a></td>
-                            <td class="txt-oflo" ng-if="item.type == 'event'"><a href="#events/{{item.id}}">{{item.title}}</a></td>
+                            <td class="txt-oflo" ng-if="item.type == 'news'"><a href="portal#newsboard/{{item.id}}">{{item.title}}</a></td>
+                            <td class="txt-oflo" ng-if="item.type == 'event'"><a href="portal#events/{{item.id}}">{{item.title}}</a></td>
                             <td ng-if="item.type == 'news'"><span class="label label-success label-rouded text-center" style="width:90px;">{{phrase.newsboard}}</span> </td>
                             <td ng-if="item.type == 'event'"><span class="label label-primary label-rouded text-center" style="width:90px;">{{phrase.events}}</span> </td>
                         </tr>
@@ -230,12 +284,12 @@
 
         <div class="card" ng-show="dashboardData.activatedModules.indexOf('messagesAct') > -1">
             <div class="card-block">
-                <h4 class="card-title">{{phrase.Messages}}</h4>
+                <h4 class="card-title"> <i class="mdi mdi-message-text-outline"></i> {{phrase.Messages}}</h4>
                 <div class="message-box" scroll-box id="megs" height="300px">
                     <div class="message-widget message-scroll">
                         <!-- Message -->
-                        <a href="#messages/{{message.id}}" ng-repeat="message in dashboardData.messages">
-                            <div class="user-img"> <img ng-src="{{'index.php/dashboard/profileImage/'+message.userId}}" alt="{{message.fullName}}" class="img-circle"> </div>
+                        <a href="portal#messages/{{message.id}}" ng-repeat="message in dashboardData.messages">
+                            <div class="user-img"> <img width="45" height="45" ng-src="{{'index.php/dashboard/profileImage/'+message.userId}}" alt="{{message.fullName}}" class="img-circle"> </div>
                             <div class="mail-contnet">
                                 <h5>{{message.fullName}}</h5> <span class="mail-desc">{{message.lastMessage}}</span>
                                 <span class="time">{{message.lastMessageDate}}</span>
@@ -258,7 +312,7 @@
 
                 <div class="card">
                     <div class="card-block">
-                        <h4 class="card-title">{{phrase.Attendance}}</h4>
+                        <h4 class="card-title"> <i class="mdi mdi-check-all"></i> {{phrase.Attendance}}</h4>
 
                         <div ng-if="dashboardData.role == 'student'" scroll-box id="stdAttndDB" height="400px">
                             <table class="table table-bordered table-hover">
@@ -325,7 +379,7 @@
 
                 <div class="card">
                     <div class="card-block">
-                        <h4 class="card-title">{{phrase.classSch}}</h4>
+                        <h4 class="card-title"> <i class="mdi mdi-timelapse"></i> {{phrase.classSch}}</h4>
 
                         <div scroll-box id="classSchDb" height="400px">
                             <table class="table table-bordered table-hover" ng-show="dashboardData.role != 'parent'">
@@ -414,60 +468,9 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-block">
-                <h4 class="card-title">{{phrase.quicklinks}}</h4>
-
-                <div class="box-body" ng-show="dashboardData.role == 'admin'">
-                  <div class="row">
-                    <div class="col-md-6" style="margin-bottom: 10px;" ng-show="adminHasPerm('newsboard')"><a href="#newsboard" class="btn btn-block btn-success"> {{phrase.newsboard}} </a></div>
-                    <div class="col-md-6" style="margin-bottom: 10px;" ng-show="adminHasPerm('events')"><a href="#events" class="btn btn-block btn-success"> {{phrase.events}} </a></div>
-                    <div class="col-md-6" style="margin-bottom: 10px;" ng-show="adminHasPerm('classSch')"><a href="#classschedule" class="btn btn-block btn-success"> {{phrase.ClassSchedule}} </a></div>
-                    <div class="col-md-6" style="margin-bottom: 10px;" ng-show="adminHasPerm('mailsms')"><a href="#mailsms" class="btn btn-block btn-success"> {{phrase.mailsms}}</a></div>
-                    <div class="col-md-6" style="margin-bottom: 10px;" ng-show="adminHasPerm('staffAttendance')"><a href="#staffAttendance" class="btn btn-block btn-success"> {{phrase.staffAttendance}} </a></div>
-                    <div class="col-md-6" style="margin-bottom: 10px;" ng-show="adminHasPerm('Attendance')"><a href="#attendance" class="btn btn-block btn-success"> {{phrase.Attendance}}</a></div>
-                    <div class="col-md-6" style="margin-bottom: 10px;" ng-show="adminHasPerm('Reports')"><a href="#reports" class="btn btn-block btn-success"> {{phrase.Reports}} </a></div>
-                    <div class="col-md-6" style="margin-bottom: 10px;" ng-show="adminHasPerm('generalSettings')"><a href="#settings" class="btn btn-block btn-success"> {{phrase.generalSettings}}</a></div>
-                  </div>
-                </div>
-
-                <div class="box-body" ng-show="dashboardData.role == 'teacher'">
-                  <div class="row" style="margin-bottom: 10px;">
-                    <div class="col-md-6"><a href="#attendance" class="btn btn-block btn-success"> {{phrase.Attendance}} </a></div>
-                    <div class="col-md-6"><a href="#examsList" class="btn btn-block btn-success"> {{phrase.examsList}} </a></div>
-                  </div>
-                  <div class="row" style="margin-bottom: 10px;">
-                    <div class="col-md-6"><a href="#assignments" class="btn btn-block btn-success"> {{phrase.Assignments}} </a></div>
-                    <div class="col-md-6"><a href="#onlineExams" class="btn btn-block btn-success"> {{phrase.Onlineexams}} </a></div>
-                  </div>
-                </div>
-
-                <div class="box-body" ng-show="dashboardData.role == 'student'">
-                  <div class="row" style="margin-bottom: 10px;">
-                    <div class="col-md-6"><a href="#classschedule" class="btn btn-block btn-success"> {{phrase.ClassSchedule}} </a></div>
-                    <div class="col-md-6"><a href="#examsList" class="btn btn-block btn-success"> {{phrase.examsList}} </a></div>
-                  </div>
-                  <div class="row" style="margin-bottom: 10px;">
-                    <div class="col-md-4"><a href="#assignments" class="btn btn-block btn-success"> {{phrase.Assignments}} </a></div>
-                    <div class="col-md-4"><a href="#onlineExams" class="btn btn-block btn-success"> {{phrase.Onlineexams}} </a></div>
-                    <div class="col-md-4"><a href="#attendanceStats" class="btn btn-block btn-success"> {{phrase.Attendance}} </a></div>
-                  </div>
-                </div>
-
-                <div class="box-body" ng-show="dashboardData.role == 'parent'">
-                  <div class="row" style="margin-bottom: 10px;">
-                    <div class="col-md-4"><a href="#students" class="btn btn-block btn-success"> {{phrase.students}} </a></div>
-                    <div class="col-md-4"><a href="#examsList" class="btn btn-block btn-success"> {{phrase.examsList}} </a></div>
-                    <div class="col-md-4"><a href="#attendanceStats" class="btn btn-block btn-success"> {{phrase.Attendance}} </a></div>
-                  </div>
-                </div>
-
-            </div>
-        </div>
-
         <div class="card" ng-show="dashboardData.polls">
             <div class="card-block">
-                <h4 class="card-title">{{dashboardData.polls.title}}</h4>
+                <h4 class="card-title"> <i class="fa fa-bar-chart-o"></i> {{dashboardData.polls.title}}</h4>
 
                 <div ng-show="dashboardData.polls.view == 'vote'">
                     <div ng-repeat="value in dashboardData.polls.items" class="radio-list">
@@ -501,7 +504,7 @@
 
         <div class="card">
             <div class="card-block">
-                <h4 class="card-title">{{phrase.Calendar}}</h4>
+                <h4 class="card-title"> <i class="fa fa-calendar"></i> {{phrase.Calendar}}</h4>
 
                 <div class="row">
 

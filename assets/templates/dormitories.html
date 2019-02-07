@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addDormitories}}</button>
+                <button ng-show="$root.can('Dormitories.addDormitories')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addDormitories}}</button>
                 <h4 class="card-title">{{phrase.listDormitories}}</h4>
                 <div class="table-responsive">
 
@@ -20,14 +20,14 @@
                             <tr>
                                 <th>{{phrase.DormName}}</th>
                                 <th>{{phrase.DormDesc}}</th>
-                                <th style="width:120px;">{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('Dormitories.editDorm') | $root.can('Dormitories.delDorm')" style="width:120px;">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="dormitory in dormitories | filter:searchText">
                                 <td>{{dormitory.dormitory}}</td>
                                 <td>{{dormitory.dormDesc}}</td>
-                                <td>
-                                    <button ng-click="edit(dormitory.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(dormitory,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('Dormitories.editDorm') | $root.can('Dormitories.delDorm')">
+                                    <button ng-show="$root.can('Dormitories.editDorm')" ng-click="edit(dormitory.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('Dormitories.delDorm')" ng-click="remove(dormitory,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!dormitories.length"><td class="noTableData" colspan="4">{{phrase.noDorm}}</td></tr>

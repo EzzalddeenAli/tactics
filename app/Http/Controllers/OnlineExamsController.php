@@ -8,7 +8,7 @@ class OnlineExamsController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,14 +21,15 @@ class OnlineExamsController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-
-		if(!$this->panelInit->hasThePerm('onlineExams')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("onlineExams.list","onlineExams.addExam","onlineExams.editExam","onlineExams.delExam","onlineExams.takeExam","onlineExams.showMarks","onlineExams.QuestionsArch") )){
+			exit;
+		}
+
 		$toReturn = array();
 		$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get()->toArray();
 		$classesArray = array();
@@ -58,6 +59,7 @@ class OnlineExamsController extends Controller {
 			if($this->panelInit->settingsArray['enableSections'] == true){
 				$onlineExams = $onlineExams->where('sectionId','LIKE','%"'.$this->data['users']->studentSection.'"%');
 			}
+			$onlineExams = $onlineExams->where('examDate','<=',time())->where('ExamEndDate','>=',time());
 		}
 
 		$onlineExams = $onlineExams->where('exAcYear',$this->panelInit->selectAcYear);
@@ -85,12 +87,21 @@ class OnlineExamsController extends Controller {
 				}
 			}
 		}
-		$toReturn['userRole'] = $this->data['users']->role;
+		$toReturn['subject_list'] = array();
+		$subject_list = \subject::select('id','subjectTitle')->get();
+		foreach ($subject_list as $key => $value) {
+			$toReturn['subject_list'][$value->id] = $value->subjectTitle;
+		}
+
 		return $toReturn;
 	}
 
 	public function delete($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "onlineExams.delExam" )){
+			exit;
+		}
+
 		if ( $postDelete = \online_exams::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -101,7 +112,20 @@ class OnlineExamsController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "onlineExams.addExam" )){
+			exit;
+		}
+
+		$examQuestionH = array();
+		if(\Input::has('examQuestion')){
+			$examQuestion = \Input::get('examQuestion');
+			foreach ($examQuestion as $key => $value) {
+				$examQuestionH[] = $value['id'];
+			}
+			$examQuestionH = array_unique($examQuestionH);
+		}
+
 		$onlineExams = new \online_exams();
 		$onlineExams->examTitle = \Input::get('examTitle');
 		$onlineExams->examDescription = \Input::get('examDescription');
@@ -117,9 +141,12 @@ class OnlineExamsController extends Controller {
 		if(\Input::has('ExamShowGrade')){
 			$onlineExams->ExamShowGrade = \Input::get('ExamShowGrade');
 		}
+		if(\Input::has('random_questions')){
+			$onlineExams->random_questions = \Input::get('random_questions');
+		}
 		$onlineExams->examTimeMinutes = \Input::get('examTimeMinutes');
 		$onlineExams->examDegreeSuccess = \Input::get('examDegreeSuccess');
-		$onlineExams->examQuestion = json_encode(\Input::get('examQuestion'));
+		$onlineExams->examQuestion = json_encode($examQuestionH);
 		$onlineExams->save();
 
 		$onlineExams->examDate = \Input::get('examDate');
@@ -147,12 +174,27 @@ class OnlineExamsController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "onlineExams.editExam" )){
+			exit;
+		}
+
 		$istook = \online_exams_grades::where('examId',$id)->where('studentId',$this->data['users']->id)->count();
 
 		$onlineExams = \online_exams::where('id',$id)->first()->toArray();
 		$onlineExams['examClass'] = json_decode($onlineExams['examClass']);
 		$onlineExams['sectionId'] = json_decode($onlineExams['sectionId']);
-		$onlineExams['examQuestion'] = json_decode($onlineExams['examQuestion']);
+
+
+		$examQuestionArray = json_decode($onlineExams['examQuestion'],true);
+		$examQuestionArrayDb = \online_exams_questions::whereIn('id',$examQuestionArray)->get();
+
+		$examQuestion = array();
+		foreach ($examQuestionArrayDb as $value) {
+			$examQuestion[] = array("id"=>$value->id,"question_text"=>$value->question_text,"question_type"=>$value->question_type);
+		}
+		$onlineExams['examQuestion'] = $examQuestion;
+
 		if(time() > $onlineExams['ExamEndDate'] || time() < $onlineExams['examDate']){
 			$onlineExams['finished'] = true;
 		}
@@ -169,7 +211,11 @@ class OnlineExamsController extends Controller {
 	}
 
 	function marks($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "onlineExams.showMarks" )){
+			exit;
+		}
+
 		$return = array();
 
 		$exam = \online_exams::where('id',$id)->first();
@@ -187,6 +233,7 @@ class OnlineExamsController extends Controller {
 					->get();
 
 		foreach ($return['grade'] as $key => $value) {
+			$return['grade'][$key]->examQuestionsAnswers = json_decode($return['grade'][$key]->examQuestionsAnswers,true);
 			$return['grade'][$key]->examDate = $this->panelInit->unix_to_date($return['grade'][$key]->examDate);
 		}
 
@@ -194,7 +241,20 @@ class OnlineExamsController extends Controller {
 	}
 
 	function edit($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "onlineExams.editExam" )){
+			exit;
+		}
+
+		$examQuestionH = array();
+		if(\Input::has('examQuestion')){
+			$examQuestion = \Input::get('examQuestion');
+			foreach ($examQuestion as $key => $value) {
+				$examQuestionH[] = $value['id'];
+			}
+			$examQuestionH = array_unique($examQuestionH);
+		}
+
 		$onlineExams = \online_exams::find($id);
 		$onlineExams->examTitle = \Input::get('examTitle');
 		$onlineExams->examDescription = \Input::get('examDescription');
@@ -209,9 +269,12 @@ class OnlineExamsController extends Controller {
 		if(\Input::has('ExamShowGrade')){
 			$onlineExams->ExamShowGrade = \Input::get('ExamShowGrade');
 		}
+		if(\Input::has('random_questions')){
+			$onlineExams->random_questions = \Input::get('random_questions');
+		}
 		$onlineExams->examTimeMinutes = \Input::get('examTimeMinutes');
 		$onlineExams->examDegreeSuccess = \Input::get('examDegreeSuccess');
-		$onlineExams->examQuestion = json_encode(\Input::get('examQuestion'));
+		$onlineExams->examQuestion = json_encode($examQuestionH);
 		$onlineExams->save();
 
 		$onlineExams->examDate = \Input::get('examDate');
@@ -220,24 +283,19 @@ class OnlineExamsController extends Controller {
 		return $this->panelInit->apiOutput(true,$this->panelInit->language['editExam'],$this->panelInit->language['examModified'],$onlineExams->toArray() );
 	}
 
-	function uploadImage(){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
-
-		if(\Input::has('oldImage') AND \Input::get('oldImage') != ""){
-			@unlink('uploads/onlineExams/'.\Input::get('oldImage'));
-		}
-
-		$fileInstance = \Input::file('questionImage');
-		$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
-		$fileInstance->move('uploads/onlineExams/',$newFileName);
-
-		return $newFileName;
-	}
-
 	function take($id){
+
+		if(!$this->panelInit->can( "onlineExams.takeExam" )){
+			exit;
+		}
+		
 		$istook = \online_exams_grades::where('examId',$id)->where('studentId',$this->data['users']->id);
 		$istookFinish = $istook->first();
 		$istook = $istook->count();
+
+		if($istook > 0 AND $istookFinish['examQuestionsAnswers'] != null){
+			return $this->panelInit->apiOutput(false,$this->panelInit->language['takeExam'],$this->panelInit->language['exAlreadyTook']);
+		}
 
 		if($istook == 0){
 			$onlineExamsGrades = new \online_exams_grades();
@@ -248,37 +306,35 @@ class OnlineExamsController extends Controller {
 		}
 
 		$onlineExams = \online_exams::where('id',$id)->first()->toArray();
-		$onlineExams['examClass'] = json_decode($onlineExams['examClass']);
-		$onlineExams['examQuestion'] = json_decode($onlineExams['examQuestion'],true);
-		foreach($onlineExams['examQuestion'] as $key => $value){
-			if(isset($onlineExams['examQuestion'][$key]['Tans'])){
-				unset($onlineExams['examQuestion'][$key]['Tans']);
-			}
-			if(isset($onlineExams['examQuestion'][$key]['Tans1'])){
-				unset($onlineExams['examQuestion'][$key]['Tans1']);
-			}
-			if(isset($onlineExams['examQuestion'][$key]['Tans2'])){
-				unset($onlineExams['examQuestion'][$key]['Tans2']);
-			}
-			if(isset($onlineExams['examQuestion'][$key]['Tans3'])){
-				unset($onlineExams['examQuestion'][$key]['Tans3']);
-			}
-			if(isset($onlineExams['examQuestion'][$key]['Tans4'])){
-				unset($onlineExams['examQuestion'][$key]['Tans4']);
-			}
-		}
-		if(time() > $onlineExams['ExamEndDate'] || time() < $onlineExams['examDate']){
-			$onlineExams['finished'] = true;
-		}
-
-		if($istook > 0 AND $istookFinish['examQuestionsAnswers'] != null){
-			return $this->panelInit->apiOutput(false,$this->panelInit->language['takeExam'],$this->panelInit->language['exAlreadyTook']);
-		}
 
 		if($onlineExams['examTimeMinutes'] != 0 AND $istook > 0){
 			if( (time() - $istookFinish['examDate']) > $onlineExams['examTimeMinutes']*60){
 				return $this->panelInit->apiOutput(false,$this->panelInit->language['takeExam'],$this->panelInit->language['examTimedOut']);
 			}
+		}
+
+		if($onlineExams['ExamEndDate'] < time()){
+			return $this->panelInit->apiOutput(false,$this->panelInit->language['takeExam'],$this->panelInit->language['examTimedOut']);
+		}
+
+		$onlineExams['examClass'] = json_decode($onlineExams['examClass']);
+		$onlineExams['examQuestion'] = json_decode($onlineExams['examQuestion'],true);
+
+		$examQuestions = \online_exams_questions::whereIn('id',$onlineExams['examQuestion'])->select('id','question_text','question_type','question_answers','question_mark','question_image');
+		if($onlineExams['random_questions'] == "1"){
+			$examQuestions = $examQuestions->orderByRaw("RAND()");
+		}
+		$examQuestions = $examQuestions->get()->toArray();
+		foreach ($examQuestions as $key => $value) {
+			$examQuestions[$key]['question_answers'] = json_decode($examQuestions[$key]['question_answers'],true);
+			if(isset($examQuestions[$key]['question_answers']['tans'])){
+				unset($examQuestions[$key]['question_answers']['tans']);
+			}
+		}
+		$onlineExams['examQuestions'] = $examQuestions;
+
+		if(time() > $onlineExams['ExamEndDate'] || time() < $onlineExams['examDate']){
+			$onlineExams['finished'] = true;
 		}
 
 		if($onlineExams['examTimeMinutes'] == 0){
@@ -292,102 +348,118 @@ class OnlineExamsController extends Controller {
 			}
 		}
 
-		$onlineExams['examDate'] = $this->panelInit->unix_to_date($onlineExams['examDate']);
-		$onlineExams['ExamEndDate'] =$this->panelInit->unix_to_date($onlineExams['ExamEndDate']);
+		$onlineExams['examDate'] = $this->panelInit->timestampToIntl($onlineExams['examDate']);
+		$onlineExams['ExamEndDate'] =$this->panelInit->timestampToIntl($onlineExams['ExamEndDate']);
+
 		return $onlineExams;
 	}
 
 	function took($id){
+
+		if(!$this->panelInit->can( "onlineExams.takeExam" )){
+			exit;
+		}
+
+		$istook = \online_exams_grades::where('examId',$id)->where('studentId',$this->data['users']->id);
+		if($istook->count() == 0){
+			return $this->panelInit->apiOutput(false,$this->panelInit->language['takeExam'],"An error occured");
+		}
+		$istook = $istook->first();
+
+		if($istook['examQuestionsAnswers'] != null){
+			return $this->panelInit->apiOutput(false,$this->panelInit->language['takeExam'],$this->panelInit->language['exAlreadyTook']);
+		}
+
 		$onlineExams = \online_exams::where('id',$id)->first()->toArray();
+
+		if($onlineExams['examTimeMinutes'] != 0){
+			if( (time() - $istook['examDate']) > $onlineExams['examTimeMinutes']*60){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['takeExam'],$this->panelInit->language['examTimedOut']);
+			}
+		}
+
 		$onlineExams['examQuestion'] = json_decode($onlineExams['examQuestion'],true);
 
-		$toReturn = array();
-		$answers = \Input::get('examQuestion');
 		$score = 0;
-		foreach($answers as $key => $value){
-			$answers[$key]['state'] = 0;
-			if(!isset($value['answer'])){
-				continue;
-			}
-			if( !isset($onlineExams['examQuestion'][$key]['type']) || (isset($onlineExams['examQuestion'][$key]['type']) AND $onlineExams['examQuestion'][$key]['type'] == "radio")){
-				$answers[$key]['userAnswer'] = $onlineExams['examQuestion'][$key]['ans'.$value['answer']];
-				if($value['answer'] == $onlineExams['examQuestion'][$key]['Tans']){
-					if(isset($onlineExams['examQuestion'][$key]['questionMark'])){
-						$score += $onlineExams['examQuestion'][$key]['questionMark'];
-					}else{
-						$score++;
+		$answers = \Input::get('answers');
+		$examQuestions = \online_exams_questions::whereIn('id',$onlineExams['examQuestion'])->select('id','question_text','question_type','question_answers','question_mark','question_image')->get()->toArray();
+
+		$examQuestionsAnswers = array();
+		foreach ($examQuestions as $key => $value) {
+			$value['question_answers'] = json_decode($value['question_answers'],true);
+			reset($answers);
+			foreach ($answers as $keyAnswer => $valueAnswer) {
+
+				if(!isset($examQuestionsAnswers[ $value['id'] ])){
+					$examQuestionsAnswers[ $value['id'] ] = array();
+				}
+				$examQuestionsAnswers[ $value['id'] ]['question_text'] = strip_tags(htmlspecialchars_decode($value['question_text'],ENT_QUOTES));
+				$examQuestionsAnswers[ $value['id'] ]['question_type'] = $value['question_type'];
+				
+				if($value['id'] == $valueAnswer['id'] && isset($valueAnswer['question_answers']['answer'])){
+					if(isset($value['question_type']) AND $value['question_type'] == "radio"){
+						$examQuestionsAnswers[ $value['id'] ]['userAnswer'] = $valueAnswer['question_answers']['answer'];
+						$answers[$keyAnswer]['state'] = 0;
+						if($valueAnswer['question_answers']['answer'] == $value['question_answers']['tans']){
+							$answers[$keyAnswer]['state'] = 1;
+							if(isset($value['questionMark'])){
+								$score += $value['questionMark'];
+							}else{
+								$score++;
+							}
+						}
+						$examQuestionsAnswers[ $value['id'] ]['state'] = $answers[$keyAnswer]['state'];
+						continue;
 					}
-					$answers[$key]['state'] = 1;
-				}
-			}
-			if(isset($onlineExams['examQuestion'][$key]['type']) AND $onlineExams['examQuestion'][$key]['type'] == "check"){
-				$pass = true;
-				$answers[$key]['userAnswer'] = array();
-
-				if(isset($value['answer1'])){
-					$answers[$key]['userAnswer'][] = $onlineExams['examQuestion'][$key]['ans1'];
-				}
-				if(isset($onlineExams['examQuestion'][$key]['Tans1']) AND !isset($value['answer1'])){
-					$pass = false;
-				}
-
-				if(isset($value['answer2'])){
-					$answers[$key]['userAnswer'][] = $onlineExams['examQuestion'][$key]['ans2'];
-				}
-				if(isset($onlineExams['examQuestion'][$key]['Tans2']) AND !isset($value['answer2'])){
-					$pass = false;
-				}
-
-				if(isset($value['answer3'])){
-					$answers[$key]['userAnswer'][] = $onlineExams['examQuestion'][$key]['ans3'];
-				}
-				if(isset($onlineExams['examQuestion'][$key]['Tans3']) AND !isset($value['answer3'])){
-					$pass = false;
-				}
-
-				if(isset($value['answer4'])){
-					$answers[$key]['userAnswer'][] = $onlineExams['examQuestion'][$key]['ans4'];
-				}
-				if(isset($onlineExams['examQuestion'][$key]['Tans4']) AND !isset($value['answer4'])){
-					$pass = false;
-				}
-
-				$answers[$key]['userAnswer'] = implode(",",$answers[$key]['userAnswer']);
-				if($pass == true){
-					if(isset($onlineExams['examQuestion'][$key]['questionMark'])){
-						$score += $onlineExams['examQuestion'][$key]['questionMark'];
-					}else{
-						$score++;
+					if(isset($value['question_type']) AND $value['question_type'] == "check"){
+						$examQuestionsAnswers[ $value['id'] ]['userAnswer'] = implode(",",$valueAnswer['question_answers']['answer']);
+						$answers[$keyAnswer]['state'] = 0;
+						$pass = true;
+						if(count($valueAnswer['question_answers']['answer']) != count($value['question_answers']['tans'])){
+							$pass = false;
+						}
+						foreach ($value['question_answers']['tans'] as $keyCheck => $valueCheck) {
+							if (!in_array($valueCheck, $valueAnswer['question_answers']['answer'])) {
+								$pass = false;
+							}
+						}
+						if($pass == true){
+							$answers[$keyAnswer]['state'] = 1;
+							if(isset($value['questionMark'])){
+								$score += $value['questionMark'];
+							}else{
+								$score++;
+							}
+						}
+						$examQuestionsAnswers[ $value['id'] ]['state'] = $answers[$keyAnswer]['state'];
+						unset($pass);
+						continue;
 					}
-					$answers[$key]['state'] = 1;
-				}
-				unset($pass);
-			}
-			if(isset($onlineExams['examQuestion'][$key]['type']) AND $onlineExams['examQuestion'][$key]['type'] == "text"){
-				$answers[$key]['userAnswer'] = $value['answer'];
-				$onlineExams['examQuestion'][$key]['ans1'] = explode(",",$onlineExams['examQuestion'][$key]['ans1']);
-				if(isset($value['answer']) AND in_array($value['answer'],$onlineExams['examQuestion'][$key]['ans1'])){
-					if(isset($onlineExams['examQuestion'][$key]['questionMark'])){
-						$score += $onlineExams['examQuestion'][$key]['questionMark'];
-					}else{
-						$score++;
+					if(isset($value['question_type']) AND $value['question_type'] == "text"){
+						$examQuestionsAnswers[ $value['id'] ]['userAnswer'] = $valueAnswer['question_answers']['answer'];
+						$answers[$keyAnswer]['state'] = 0;
+						if (in_array($valueAnswer['question_answers']['answer'], $value['question_answers']['answers'])) {
+							$answers[$keyAnswer]['state'] = 1;
+							if(isset($value['questionMark'])){
+								$score += $value['questionMark'];
+							}else{
+								$score++;
+							}
+						}
+						$examQuestionsAnswers[ $value['id'] ]['state'] = $answers[$keyAnswer]['state'];
+						continue;
 					}
-					$answers[$key]['state'] = 1;
 				}
 			}
 		}
 
-		$onlineExamsGrades = \online_exams_grades::where('examId',$id)->where('studentId',$this->data['users']->id)->first();
-		$onlineExamsGrades->examId = \Input::get('id') ;
-		$onlineExamsGrades->studentId = $this->data['users']->id ;
-		$onlineExamsGrades->examQuestionsAnswers = json_encode($answers) ;
-		$onlineExamsGrades->examGrade = $score ;
-		$onlineExamsGrades->examDate = time() ;
-		$onlineExamsGrades->save();
+		$istook->examQuestionsAnswers = json_encode($examQuestionsAnswers) ;
+		$istook->examGrade = $score ;
+		$istook->save();
 
 		if($onlineExams['ExamShowGrade'] == 1){
 			if($onlineExams['examDegreeSuccess'] != "0"){
-				if($onlineExams['examDegreeSuccess'] <= $score){
+				if(intval($onlineExams['examDegreeSuccess']) <= $score){
 					$score .= " - Succeeded";
 				}else{
 					$score .= " - Failed";
@@ -400,7 +472,11 @@ class OnlineExamsController extends Controller {
 	}
 
 	function export($id,$type){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "onlineExams.showMarks" )){
+			exit;
+		}
+
 		if($type == "excel"){
 			$classArray = array();
 			$classes = \classes::get();
@@ -496,5 +572,170 @@ class OnlineExamsController extends Controller {
 
 		}
 		exit;
+	}
+
+	function questions(){
+
+		if(!$this->panelInit->can( "onlineExams.QuestionsArch" )){
+			exit;
+		}
+
+		$userId = $this->data['users']->id;
+
+		$online_exams_questions = new \online_exams_questions();
+			if($this->data['users']->role != "admin"){
+				$online_exams_questions = $online_exams_questions->where(function($query) use ($userId){
+											$query->where('employee_id', $userId)->orWhere('is_shared','1');
+										});
+			}
+		$online_exams_questions = $online_exams_questions->get();
+
+		foreach ($online_exams_questions as $key => $value) {
+			$online_exams_questions[$key]['question_text'] = strip_tags(htmlspecialchars_decode($online_exams_questions[$key]['question_text'],ENT_QUOTES));
+		}
+
+		return $online_exams_questions;
+	}
+
+	function createQuestions(){
+
+		if(!$this->panelInit->can( "onlineExams.QuestionsArch" )){
+			exit;
+		}
+
+		$answersList = array();
+		if(\Input::get('question_type') == "radio"){
+			$answersList['answers'] = \Input::get('radioAnswers');
+			$answersList['tans'] = \Input::get('radioTrueAnswer');
+		}elseif(\Input::get('question_type') == "check"){
+			$answersList['answers'] = \Input::get('checkAnswers');
+			$answersList['tans'] = \Input::get('checkTrueAnswer');
+		}elseif (\Input::get('question_type') == "text") {
+			$answersList['answers'] = \Input::get('textAnswers');
+		}
+
+		$online_exams_questions = new \online_exams_questions();
+		$online_exams_questions->question_text = \Input::get('question_text');
+		$online_exams_questions->question_type = \Input::get('question_type');
+		$online_exams_questions->question_answers = json_encode($answersList);
+		$online_exams_questions->question_mark = \Input::get('question_mark');
+
+		if (\Input::hasFile('question_image')) {
+			$fileInstance = \Input::file('question_image');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addQuestion'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
+			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
+			$fileInstance->move('uploads/onlineExams/',$newFileName);
+
+			$online_exams_questions->question_image = $newFileName;
+		}
+
+		$online_exams_questions->question_subject = \Input::get('question_subject');
+		$online_exams_questions->employee_id = $this->data['users']->id;
+		$online_exams_questions->is_shared = \Input::get('is_shared');
+		$online_exams_questions->save();
+
+		return $this->panelInit->apiOutput(true,$this->panelInit->language['addQuestion'],$this->panelInit->language['quesAdded'],$online_exams_questions->toArray() );
+	}
+
+	function fetchQuestions($id){
+
+		if(!$this->panelInit->can( "onlineExams.QuestionsArch" )){
+			exit;
+		}
+
+		$online_exams_questions = \online_exams_questions::where('id',$id)->first()->toArray();
+		$online_exams_questions['question_answers'] = json_decode($online_exams_questions['question_answers'],true);
+
+		if($online_exams_questions['question_type'] == "radio"){
+			$online_exams_questions['answersList'] = $online_exams_questions['question_answers']['answers'];
+			$online_exams_questions['radioTrueAnswer'] = $online_exams_questions['question_answers']['tans'];
+		}elseif($online_exams_questions['question_type'] == "check"){
+			$online_exams_questions['answersList'] = $online_exams_questions['question_answers']['answers'];
+			$online_exams_questions['checkTrueAnswer'] = $online_exams_questions['question_answers']['tans'];
+		}elseif ($online_exams_questions['question_type'] == "text") {
+			$online_exams_questions['answersList'] = $online_exams_questions['question_answers']['answers'];
+		}
+
+		return $online_exams_questions;
+	}
+
+	function editQuestions($id){
+
+		if(!$this->panelInit->can( "onlineExams.QuestionsArch" )){
+			exit;
+		}
+
+		$answersList = array();
+		if(\Input::get('question_type') == "radio"){
+			$answersList['answers'] = \Input::get('radioAnswers');
+			$answersList['tans'] = \Input::get('radioTrueAnswer');
+		}elseif(\Input::get('question_type') == "check"){
+			$answersList['answers'] = \Input::get('checkAnswers');
+			$answersList['tans'] = \Input::get('checkTrueAnswer');
+		}elseif (\Input::get('question_type') == "text") {
+			$answersList['answers'] = \Input::get('textAnswers');
+		}
+
+		$online_exams_questions = \online_exams_questions::find($id);
+		$online_exams_questions->question_text = \Input::get('question_text');
+		$online_exams_questions->question_type = \Input::get('question_type');
+		$online_exams_questions->question_answers = json_encode($answersList);
+		$online_exams_questions->question_mark = \Input::get('question_mark');
+
+		if (\Input::hasFile('question_image')) {
+			$fileInstance = \Input::file('question_image');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editQuestion'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			
+			$newFileName = uniqid().".".$fileInstance->getClientOriginalExtension();
+			$fileInstance->move('uploads/onlineExams/',$newFileName);
+
+			$online_exams_questions->question_image = $newFileName;
+		}
+
+		$online_exams_questions->question_subject = \Input::get('question_subject');
+		$online_exams_questions->employee_id = $this->data['users']->id;
+		$online_exams_questions->is_shared = \Input::get('is_shared');
+		$online_exams_questions->save();
+
+		return $this->panelInit->apiOutput(true,$this->panelInit->language['editQuestion'],$this->panelInit->language['quesModif'],$online_exams_questions->toArray() );
+	}
+
+	function deleteQuestions($id){
+
+		if(!$this->panelInit->can( "onlineExams.QuestionsArch" )){
+			exit;
+		}
+
+		if ( $postDelete = \online_exams_questions::where('id', $id)->first() )
+        {
+			if($postDelete->question_image != ""){ @unlink('uploads/onlineExams/'.$postDelete->question_image); }
+            $postDelete->delete();
+            return $this->panelInit->apiOutput(true,$this->panelInit->language['delQues'],$this->panelInit->language['quesDeleted']);
+        }else{
+            return $this->panelInit->apiOutput(false,$this->panelInit->language['delQues'],$this->panelInit->language['quesNotExist']);
+        }
+	}
+
+	function searchQuestion($keyword){
+
+		if(!$this->panelInit->can( array("onlineExams.addExam","onlineExams.editExam") )){
+			exit;
+		}
+
+		$userId = $this->data['users']->id;
+		$questions = \online_exams_questions::where(function($query) use ($userId){
+													$query->where('employee_id', $userId)->orWhere('is_shared','1');
+												})->where(function($query2) use ($keyword){
+													$query2->where('question_text','LIKE','%'.$keyword.'%')->orWhere('question_answers','LIKE','%'.$keyword.'%');
+												})->select('id','question_text','question_type')->get();
+
+		return $questions;
 	}
 }

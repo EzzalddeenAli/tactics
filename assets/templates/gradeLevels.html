@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addLevel}}</button>
+                <button ng-show="$root.can('gradeLevels.addLevel')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addLevel}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
@@ -28,16 +28,16 @@
                                 <th>{{phrase.gradeDesc}}</th>
                                 <th>{{phrase.gradePoint}}</th>
                                 <th>{{phrase.from}} -> {{phrase.to}}</th>
-                                <th>{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('gradeLevels.editGrade') || $root.can('gradeLevels.delGradeLevel')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="level in gradeLevels | filter:searchText">
                                 <td>{{level.gradeName}}</td>
                                 <td>{{level.gradeDescription}}</td>
                                 <td>{{level.gradePoints}}</td>
                                 <td>{{level.gradeFrom}} -> {{level.gradeTo}}</td>
-                                <td>
-                                    <button ng-click="edit(level.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(level,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('gradeLevels.editGrade') || $root.can('gradeLevels.delGradeLevel')">
+                                    <button ng-show="$root.can('gradeLevels.editGrade')" ng-click="edit(level.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('gradeLevels.delGradeLevel')" ng-click="remove(level,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!gradeLevels.length"><td class="noTableData" colspan="6">{{phrase.noGrades}}</td></tr>

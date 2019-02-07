@@ -30,6 +30,13 @@ $(function() {
         }
     });
 
+    
+    $(".sidebar-nav li").each(function( key, value ) {
+        if($(this).find("ul").length && $(this).find("ul").children().length == 0){
+            this.remove();
+        }
+    });
+
     $("#chgAcademicYear").click(function(e) {
         $('#myModal').modal('show');
     });

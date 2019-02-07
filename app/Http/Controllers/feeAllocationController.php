@@ -8,7 +8,7 @@ class feeAllocationController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,16 +21,15 @@ class feeAllocationController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-
-		if($this->data['users']->role != "admin" && $this->data['users']->role != "account") exit;
-
-		if(!$this->panelInit->hasThePerm('accounting')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("FeeAllocation.list","FeeAllocation.addFeeAllocation","FeeAllocation.editFeeAllocation","FeeAllocation.delFeeAllocation") )){
+			exit;
+		}
+		
 		$toReturn = array();
 		$toReturn['classes'] = array();
 		$toReturn['classAllocation'] = array();
@@ -55,6 +54,11 @@ class feeAllocationController extends Controller {
 	}
 
 	public function listFeeTypes($id){
+
+		if(!$this->panelInit->can( array("FeeAllocation.addFeeAllocation","FeeAllocation.editFeeAllocation","FeeAllocation.delFeeAllocation") )){
+			exit;
+		}
+
 		$toReturn = array();
 		$fee_type = \fee_type::where('feeGroup',$id)->select('id','feeTitle','feeCode','feeDescription','feeAmount')->get();
 
@@ -66,6 +70,11 @@ class feeAllocationController extends Controller {
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "FeeAllocation.delFeeAllocation" )){
+			exit;
+		}
+
 		if ( $postDelete = \fee_allocation::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -76,6 +85,11 @@ class feeAllocationController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "FeeAllocation.addFeeAllocation" )){
+			exit;
+		}
+
 		$feeTypeNextTS = 0;
 		$fee_type = \fee_type::where('id',\Input::get('feeType'))->select('feeSchDetails')->first()->toArray();
 		$fee_type['feeSchDetails'] = json_decode($fee_type['feeSchDetails'],true);
@@ -128,6 +142,11 @@ class feeAllocationController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "FeeAllocation.editFeeAllocation" )){
+			exit;
+		}
+
 		$toReturn = array();
 
 		$toReturn['allocation'] = \fee_allocation::where('id',$id)->first()->toArray();
@@ -165,6 +184,11 @@ class feeAllocationController extends Controller {
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "FeeAllocation.editFeeAllocation" )){
+			exit;
+		}
+		
 		$feeTypeNextTS = 0;
 		$fee_type = \fee_type::where('id',\Input::get('feeType'))->select('feeSchDetails')->first()->toArray();
 		$fee_type['feeSchDetails'] = json_decode($fee_type['feeSchDetails'],true);

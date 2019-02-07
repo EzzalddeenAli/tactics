@@ -8,7 +8,7 @@ class vacationController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -18,13 +18,17 @@ class vacationController extends Controller {
 		$this->data['panelInit'] = $this->panelInit;
 		$this->data['breadcrumb']['Settings'] = \URL::to('/dashboard/languages');
 		$this->data['users'] = $this->panelInit->getAuthUser();
+
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
 	}
 
 	public function getVacation(){
-		if($this->data['users']->role == "admin" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( array("Vacation.reqVacation") )){
+			exit;
+		}
 
         $currentUserVacations = \vacation::where('userid',$this->data['users']->id)->where('acYear',$this->panelInit->selectAcYear)->count();
 
@@ -44,19 +48,22 @@ class vacationController extends Controller {
 			$daysList_[] = $value;
 		}
 
-        if($this->data['users']->role == "teacher" AND (count($daysList_) + $currentUserVacations) > $this->panelInit->settingsArray['teacherVacationDays'] ){
-            return $this->panelInit->apiOutput(false,"Request Vacation","You Don't have enough balance for vacation");
+        if($this->data['users']->role != "student" AND (count($daysList_) + $currentUserVacations) > $this->panelInit->settingsArray['teacherVacationDays'] ){
+            return $this->panelInit->apiOutput(false,$this->panelInit->language['reqVacation'],$this->panelInit->language['vacNoBalance']);
         }
 
         if($this->data['users']->role == "student" AND (count($daysList_) + $currentUserVacations) > $this->panelInit->settingsArray['studentVacationDays'] ){
-            return $this->panelInit->apiOutput(false,"Request Vacation","You Don't have enough balance for vacation");
+            return $this->panelInit->apiOutput(false,$this->panelInit->language['reqVacation'],$this->panelInit->language['vacNoBalance']);
         }
 
-        return $this->panelInit->apiOutput(true,$this->panelInit->language['getVacation'],$this->panelInit->language['confirmVacation'],$daysList);
+        return $this->panelInit->apiOutput(true,$this->panelInit->language['reqVacation'],$this->panelInit->language['confirmVacation'],$daysList);
 	}
 
     public function saveVacation(){
-        if($this->data['users']->role == "admin" || $this->data['users']->role == "parent") exit;
+
+    	if(!$this->panelInit->can( array("Vacation.reqVacation") )){
+			exit;
+		}
 
         $daysList = \Input::get('days');
         $currentUserVacations = \vacation::where('userid',$this->data['users']->id)->where('acYear',$this->panelInit->selectAcYear)->count();
@@ -69,15 +76,15 @@ class vacationController extends Controller {
 			$daysList_[] = $value;
 		}
 
-        if($this->data['users']->role == "teacher" AND (count($daysList_) + $currentUserVacations) > $this->panelInit->settingsArray['teacherVacationDays'] ){
-            return $this->panelInit->apiOutput(false,"Request Vacation","You Don't have enough balance for vacation");
+        if($this->data['users']->role != "student" AND (count($daysList_) + $currentUserVacations) > $this->panelInit->settingsArray['teacherVacationDays'] ){
+            return $this->panelInit->apiOutput(false,$this->panelInit->language['reqVacation'],$this->panelInit->language['vacNoBalance']);
         }
 
         if($this->data['users']->role == "student" AND (count($daysList_) + $currentUserVacations) > $this->panelInit->settingsArray['studentVacationDays'] ){
-            return $this->panelInit->apiOutput(false,"Request Vacation","You Don't have enough balance for vacation");
+            return $this->panelInit->apiOutput(false,$this->panelInit->language['reqVacation'],$this->panelInit->language['vacNoBalance']);
         }
 
-        foreach($daysList_ as $value){
+        foreach ($daysList_ as $key => $value) {
             $vacation = new \vacation();
             $vacation->userid = $this->data['users']->id;
             $vacation->vacDate = $value['timestamp'];
@@ -86,11 +93,15 @@ class vacationController extends Controller {
             $vacation->save();
         }
 
-        return $this->panelInit->apiOutput(true,$this->panelInit->language['getVacation'],$this->panelInit->language['vacSubmitted']);
+        return $this->panelInit->apiOutput(true,$this->panelInit->language['reqVacation'],$this->panelInit->language['vacSubmitted']);
     }
 
 	public function delete($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( array("Vacation.reqVacation") )){
+			exit;
+		}
+
 		if ( $postDelete = \vacation::where('id', $id)->first() )
         {
             $postDelete->delete();
@@ -98,6 +109,49 @@ class vacationController extends Controller {
         }else{
             return $this->panelInit->apiOutput(false,$this->panelInit->language['delVacation'],$this->panelInit->language['vacNotExist']);
         }
+	}
+
+	public function get_approval(){
+
+		if(!$this->panelInit->can( array("Vacation.appVacation") )){
+			exit;
+		}
+
+        $vacation = \vacation::leftJoin('users', 'users.id', '=', 'vacation.userid')->where('acYear',$this->panelInit->selectAcYear)->where('acceptedVacation','-1')->select('vacation.id as id','vacation.vacDate as vacDate','users.id as userid','users.username as username','users.email as email','users.fullName as fullName','users.role as role')->get();
+        foreach ($vacation as $key => $value) {
+        	$vacation[$key]['vacDate'] = $this->panelInit->unix_to_date($vacation[$key]['vacDate']);
+        }
+        return $vacation;
+	}
+
+	public function set_approval(){
+
+		if(!$this->panelInit->can( array("Vacation.appVacation") )){
+			exit;
+		}
+
+		$vacation = \vacation::find(\Input::get('id'));
+		$vacation->acceptedVacation = \Input::get('status');
+		$vacation->save();
+
+		if(\Input::get('status') == 1){
+			\attendance::where('studentId',$vacation->userid)->where('date',$vacation->vacDate)->delete();
+		}
+
+        return $this->panelInit->apiOutput(true,$this->panelInit->language['appVacation'],$this->panelInit->language['vacStatChged']);
+	}
+
+	public function my_vacations(){
+
+		if(!$this->panelInit->can( array("Vacation.myVacation") )){
+			exit;
+		}
+
+		$vacation = \vacation::where('userid',$this->data['users']->id)->where('acYear',$this->panelInit->selectAcYear)->get();
+        foreach ($vacation as $key => $value) {
+        	$vacation[$key]['vacDate'] = $this->panelInit->unix_to_date($vacation[$key]['vacDate']);
+        }
+        return $vacation;
 	}
 
 	public function remove_off_days($daysList){

@@ -5,6 +5,8 @@ class MailSmsHandler {
 	var $title;
 
 	public function mail($to,$title,$message,$fullName="",$settings_array=""){
+		global $debug_smtp;
+
 		if($settings_array == ""){
 			$panelInit = new \DashboardInit();
 			$settings = $panelInit->settingsArray;
@@ -28,13 +30,16 @@ class MailSmsHandler {
 			return mail($to, $title, $message, $header);
 		}elseif($this->settings['mailProvider'] == "phpmailer"){
 			$mail = new PHPMailer(true);
-			$mail->SMTPDebug  = 2;
+			if(isset($debug_smtp) && $debug_smtp == true){
+				$mail->SMTPDebug  = 2;
+			}
 			try {
 				$mail->From = $settings['systemEmail'];
 				$mail->FromName = $settings['siteTitle'];
 				$mail->addAddress($to, $fullName);
 				$mail->Subject = $title;
 				$mail->Body    = $message;
+				$mail->CharSet = 'UTF-8';
 				$mail->IsHTML(true);
 				return $mail->send();
 			} catch (phpmailerException $e) {
@@ -44,7 +49,9 @@ class MailSmsHandler {
 			}
 		}elseif($this->settings['mailProvider'] == "smtp"){
 			$mail             = new PHPMailer(true);
-			$mail->SMTPDebug  = 2;
+			if(isset($debug_smtp) && $debug_smtp == true){
+				$mail->SMTPDebug  = 2;
+			}
 			try {
 				$mail->IsSMTP();
 				$mail->SMTPAuth   = true;
@@ -64,6 +71,7 @@ class MailSmsHandler {
 				$mail->SetFrom($settings['systemEmail'], $settings['siteTitle']);
 				$mail->Subject = $title;
 				$mail->Body    = $message;
+				$mail->CharSet = 'UTF-8';
 				$mail->addAddress($to, $fullName);
 				$mail->IsHTML(true);
 				return $mail->Send();
@@ -131,10 +139,20 @@ class MailSmsHandler {
 	}
 
 	public function nexmo($to,$message){
-		if($this->settings['nexmoApiKey'] == "" || $this->settings['nexmoApiSecret'] == "") return;
-		$nexmo_sms = new NexmoMessage($this->settings['nexmoApiKey'], $this->settings['nexmoApiSecret']);
+		if($this->settings['nexmoApiKey'] == "" || $this->settings['nexmoApiSecret'] == "" || $this->settings['nexmoFromId'] == "") return;
+
+		$basic  = new \Nexmo\Client\Credentials\Basic($this->settings['nexmoApiKey'], $this->settings['nexmoApiSecret']);
+		$client = new \Nexmo\Client($basic);
+
 		$to = $this->prepareNumberFormat($to,"c");
-		return $info = $nexmo_sms->sendText( $to, $this->title,$message );
+		
+		$message = $client->message()->send([
+		    'to' => $to,
+		    'from' => $this->settings['nexmoFromId'],
+		    'text' => $message
+		]);
+
+		return $message;
 	}
 
 	public function twilio($to,$message){
@@ -163,7 +181,7 @@ class MailSmsHandler {
 	}
 
 	public function clickatell($to,$message){
-		if($this->settings['clickatellUserName'] == "" || $this->settings['clickatellPassword'] == "" || $this->settings['clickatellApiKey'] == "") return;
+		if($this->settings['clickatellApiKey'] == "") return;
 
 		$to = $this->prepareNumberFormat($to,"c");
 		return $server_output = file_get_contents( "https://platform.clickatell.com/messages/http/send?apiKey=".$this->settings['clickatellApiKey']."&to=".$to."&content=".urlencode($message) );
@@ -180,7 +198,7 @@ class MailSmsHandler {
 
 	public function bulksms($to,$message){
 		if($this->settings['bulksmsUserName'] == "" || $this->settings['bulksmsPassword'] == "" ) return;
-		$to = $this->prepareNumberFormat($to,"00");
+		$to = $this->prepareNumberFormat($to,"all");
 		$url = 'http://bulksms.vsms.net/eapi/submission/send_sms/2/2.0';
 		$data = 'username='.$this->settings['bulksmsUserName'].'&password='.$this->settings['bulksmsPassword'].'&message='.urlencode($message).'&msisdn='.urlencode( $to );
 
@@ -245,6 +263,9 @@ class MailSmsHandler {
 		$message = rawurlencode($message);
 		$this->settings['customHTTPParams'] = str_replace("{message}",htmlspecialchars_decode(trim($message),ENT_QUOTES),$this->settings['customHTTPParams']);
 
+		$this->settings['customHTTPURL'] = str_replace("{to}",trim($to),$this->settings['customHTTPURL']);
+		$this->settings['customHTTPURL'] = str_replace("{message}",htmlspecialchars_decode(trim($message),ENT_QUOTES),$this->settings['customHTTPURL']);
+		
 		if($this->settings['customHTTPType'] == "get"){			
 			$smsrequest = $this->settings['customHTTPURL']."?".$this->settings['customHTTPParams'];
 
@@ -298,6 +319,9 @@ class MailSmsHandler {
 		if($plusStyle == "00"){
 			return str_replace("+","00",$to);
 		}elseif($plusStyle == "c"){
+			return str_replace("+","",$to);
+		}elseif($plusStyle == "all"){
+			$to = str_replace("00","",$to);
 			return str_replace("+","",$to);
 		}
 	}

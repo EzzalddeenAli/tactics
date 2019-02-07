@@ -8,7 +8,7 @@ class homeworksController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -22,15 +22,23 @@ class homeworksController extends Controller {
 			return \Redirect::to('/');
 		}
 
-		if(!$this->panelInit->hasThePerm('Assignments')){
-			exit;
-		}
 	}
 
-	public function listAll()
+	public function listAll($page = 1,$search = "")
 	{
+
+		if(!$this->panelInit->can( array("Homework.list","Homework.View","Homework.addHomework","Homework.editHomework","Homework.delHomework","Homework.Download") )){
+			exit;
+		}
+
 		$toReturn = array();
-		$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get()->toArray();
+
+		if($this->data['users']->role == "teacher"){
+			$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->where('classTeacher','LIKE','%"'.$this->data['users']->id.'"%')->get()->toArray();
+		}else{
+			$toReturn['classes'] = \classes::where('classAcademicYear',$this->panelInit->selectAcYear)->get()->toArray();
+		}
+
 		$classesArray = array();
 		foreach ($toReturn['classes'] as $class) {
 			$classesArray[$class['id']] = $class['className'];
@@ -53,6 +61,13 @@ class homeworksController extends Controller {
 		$toReturn['homeworks'] = array();
 		if(count($classesArray) > 0){
 			$homeworks = new \homeworks();
+
+			if($search != ""){
+	            $homeworks = $homeworks->where(function($query) use ($search){
+	                        $query->where("homeworkTitle","like","%".$search."%")->orWhere("homeworkDescription","like","%".$search."%");
+	                });
+	        }
+			
 			if($this->data['users']->role == "teacher"){
 
 				$homeworks = $homeworks->where('teacherId',$this->data['users']->id);
@@ -63,7 +78,6 @@ class homeworksController extends Controller {
 				if($this->panelInit->settingsArray['enableSections'] == true){
 					$homeworks = $homeworks->where('sectionId','LIKE','%"'.$this->data['users']->studentSection.'"%');
 				}
-				$homeworks = $homeworks->get();
 
 			}elseif ($this->data['users']->role == "parent") {
 
@@ -107,18 +121,18 @@ class homeworksController extends Controller {
 											}
 								        });
 					}
-					$homeworks = $homeworks->get();
 
 				}
-			}else{
-				$homeworks = $homeworks->where(function($query) use ($classesArray){
-									foreach($classesArray as $key => $value){
-										$query = $query->orWhere('classId','LIKE','%"'.$key.'"%');
-									}
-						        });
-				$homeworks = $homeworks->orderByRaw('homeworkDate + 0 Desc')->get();
 			}
+			$homeworks = $homeworks->where(function($query) use ($classesArray){
+								foreach($classesArray as $key => $value){
+									$query = $query->orWhere('classId','LIKE','%"'.$key.'"%');
+								}
+					        });
 
+			$toReturn['totalItems'] = $homeworks->count();
+			$homeworks = $homeworks->orderByRaw('homeworkDate + 0 Desc')->take('20')->skip(20* ($page - 1) )->get();
+			
 			$toReturn['userRole'] = $this->data['users']->role;
 
 			if(!isset($homeworks)){
@@ -169,7 +183,18 @@ class homeworksController extends Controller {
 		return $toReturn;
 	}
 
+	public function search($keyword,$page = 1){
+
+        return $this->listAll($page,$keyword);
+
+    }
+
 	public function download($id){
+
+		if(!$this->panelInit->can( "Homework.Download" )){
+			exit;
+		}
+
 		$toReturn = \homeworks::where('id',$id)->first();
 		if(file_exists('uploads/homeworks/'.$toReturn->homeworkFile)){
 			$fileName = preg_replace('/[^a-zA-Z0-9-_\.]/','-',$toReturn->homeworkTitle). "." .pathinfo($toReturn->homeworkFile, PATHINFO_EXTENSION);
@@ -183,7 +208,11 @@ class homeworksController extends Controller {
 	}
 
 	public function delete($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "Homework.delHomework" )){
+			exit;
+		}
+
 		if ( $postDelete = \homeworks::where('id', $id)->first() )
         {
 			@unlink("uploads/homeworks/".$postDelete->homeworkFile);
@@ -195,7 +224,11 @@ class homeworksController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "Homework.addHomework" )){
+			exit;
+		}
+
 		$homeworks = new \homeworks();
 		$homeworks->classId = json_encode(\Input::get('classId'));
 		if($this->panelInit->settingsArray['enableSections'] == true){
@@ -212,6 +245,11 @@ class homeworksController extends Controller {
 		$homeworks->save();
 		if (\Input::hasFile('homeworkFile')) {
 			$fileInstance = \Input::file('homeworkFile');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['addHomework'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+
 			$newFileName = "homeworks_".uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/homeworks/',$newFileName);
 
@@ -245,6 +283,11 @@ class homeworksController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "Homework.editHomework" )){
+			exit;
+		}
+
 		$toReturn = \homeworks::where('id',$id)->first();
 
 		$DashboardController = new DashboardController();
@@ -261,6 +304,11 @@ class homeworksController extends Controller {
 	}
 
 	function fetch_view($id){
+
+		if(!$this->panelInit->can( "Homework.View" )){
+			exit;
+		}
+
 		$toReturn = \homeworks::where('id',$id)->first()->toArray();
 
 		$toReturn['homeworkDate'] = $this->panelInit->unix_to_date($toReturn['homeworkDate']);
@@ -293,7 +341,7 @@ class homeworksController extends Controller {
 
 		$studentsCompleted = json_decode($toReturn['studentsCompleted'],true);
 		
-		if($this->data['users']->id == $toReturn['teacherId']){
+		if($this->panelInit->can( "Homework.Answers" )){
 			$toReturn['student_applied'] = array();
 			$toReturn['student_not_applied'] = array();
 
@@ -310,53 +358,58 @@ class homeworksController extends Controller {
 					$toReturn['student_not_applied'][ $value->id ] = $value->fullName;
 				}
 			}
-		}
+		}else{
 
-		if($this->data['users']->role == "student"){
-			$toReturn['student_applied'] = array();
-			$toReturn['student_not_applied'] = array();
+			if($this->data['users']->role == "student"){
+				$toReturn['student_applied'] = array();
+				$toReturn['student_not_applied'] = array();
 
-			if(is_array($studentsCompleted) AND in_array($this->data['users']->id, $studentsCompleted)){
-				$toReturn['student_applied'][ $this->data['users']->id ] = $this->data['users']->fullName;
-			}else{
-				$toReturn['student_not_applied'][ $this->data['users']->id ] = $this->data['users']->fullName;
-			}
-		}
-
-
-		if($this->data['users']->id == "parent"){
-			$toReturn['student_applied'] = array();
-			$toReturn['student_not_applied'] = array();
-
-			$parentOf = json_decode($this->data['users']->parentOf,true);
-			if(!is_array($parentOf)){
-				$parentOf = array();
-			}
-			$ids = array();
-			foreach ($parentOf as $value) {
-				$ids[] = $value['id'];
-			}
-
-			if(count($ids) > 0){
-				$parets_students = \User::whereIn('id',$ids)->select('id','fullName')->get();
-				foreach ($parets_students as $key => $value) {
-
-					if(is_array($studentsCompleted) AND in_array($value->id, $studentsCompleted)){
-						$toReturn['student_applied'][ $value->id ] = $value->fullName;
-					}else{
-						$toReturn['student_not_applied'][ $value->id ] = $value->fullName;
-					}
-
+				if(is_array($studentsCompleted) AND in_array($this->data['users']->id, $studentsCompleted)){
+					$toReturn['student_applied'][ $this->data['users']->id ] = $this->data['users']->fullName;
+				}else{
+					$toReturn['student_not_applied'][ $this->data['users']->id ] = $this->data['users']->fullName;
 				}
 			}
 
+
+			if($this->data['users']->id == "parent"){
+				$toReturn['student_applied'] = array();
+				$toReturn['student_not_applied'] = array();
+
+				$parentOf = json_decode($this->data['users']->parentOf,true);
+				if(!is_array($parentOf)){
+					$parentOf = array();
+				}
+				$ids = array();
+				foreach ($parentOf as $value) {
+					$ids[] = $value['id'];
+				}
+
+				if(count($ids) > 0){
+					$parets_students = \User::whereIn('id',$ids)->select('id','fullName')->get();
+					foreach ($parets_students as $key => $value) {
+
+						if(is_array($studentsCompleted) AND in_array($value->id, $studentsCompleted)){
+							$toReturn['student_applied'][ $value->id ] = $value->fullName;
+						}else{
+							$toReturn['student_not_applied'][ $value->id ] = $value->fullName;
+						}
+
+					}
+				}
+
+			}
 		}
 
 		return $toReturn;
 	}
 
 	function edit($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "Homework.editHomework" )){
+			exit;
+		}
+
 		$homeworks = \homeworks::find($id);
 		$homeworks->classId = json_encode(\Input::get('classId'));
 		if($this->panelInit->settingsArray['enableSections'] == true){
@@ -369,8 +422,13 @@ class homeworksController extends Controller {
 		$homeworks->homeworkSubmissionDate = $this->panelInit->date_to_unix(\Input::get('homeworkSubmissionDate'));
 		$homeworks->homeworkEvaluationDate = $this->panelInit->date_to_unix(\Input::get('homeworkEvaluationDate'));
 		if (\Input::hasFile('homeworkFile')) {
-			@unlink("uploads/homeworks/".$homeworks->homeworkFile);
 			$fileInstance = \Input::file('homeworkFile');
+
+			if(!$this->panelInit->validate_upload($fileInstance)){
+				return $this->panelInit->apiOutput(false,$this->panelInit->language['editHomework'],"Sorry, This File Type Is Not Permitted For Security Reasons ");
+			}
+			@unlink("uploads/homeworks/".$homeworks->homeworkFile);
+			
 			$newFileName = "assignments_".uniqid().".".$fileInstance->getClientOriginalExtension();
 			$fileInstance->move('uploads/homeworks/',$newFileName);
 
@@ -386,7 +444,10 @@ class homeworksController extends Controller {
 	}
 
 	function apply($id){
-		if($this->data['users']->role == "student" || $this->data['users']->role == "parent") exit;
+
+		if(!$this->panelInit->can( "Homework.Answers" )){
+			exit;
+		}
 
 		$homeworks = \homeworks::find($id);
 		$studentsCompleted = json_decode($homeworks->studentsCompleted,true);

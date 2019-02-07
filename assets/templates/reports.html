@@ -9,7 +9,7 @@
 
 <div class="row" ng-show="views.list">
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="usersStats()">
@@ -22,7 +22,7 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="stdAttendance()">
@@ -35,7 +35,7 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="changeView('stfAttendance')">
@@ -48,7 +48,7 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin' || $root.dashboardData.role == 'account'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="changeView('paymentsReports')">
@@ -61,7 +61,7 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin' || $root.dashboardData.role == 'account'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="changeView('payRollReports')">
@@ -74,7 +74,7 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin' || $root.dashboardData.role == 'account'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="changeView('incomeReports')">
@@ -87,7 +87,7 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin' || $root.dashboardData.role == 'account'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="changeView('expensesReports')">
@@ -100,7 +100,7 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="changeView('stVacation')">
@@ -113,7 +113,7 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="changeView('teacherVacation')">
@@ -126,7 +126,7 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="marksheetGenerationPrepare()">
@@ -139,13 +139,26 @@
         </div>
     </div>
 
-    <div class="col-lg-3 col-md-6" ng-show="$root.dashboardData.role == 'admin'">
+    <div class="col-lg-3 col-md-6">
         <div class="card">
             <div class="card-block">
                 <div class="d-flex flex-row" style="cursor:pointer;" ng-click="biometricUsers()">
                     <div class="round align-self-center round-success"><i class="mdi mdi-fingerprint"></i></div>
                     <div class="m-l-10 align-self-center">
                         <h5 class="text-muted m-b-0">{{phrase.bioUsers}}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card">
+            <div class="card-block">
+                <div class="d-flex flex-row" style="cursor:pointer;" ng-click="genCertPrep()">
+                    <div class="round align-self-center round-success"><i class="mdi mdi-certificate"></i></div>
+                    <div class="m-l-10 align-self-center">
+                        <h5 class="text-muted m-b-0">{{phrase.gen_cert}}</h5>
                     </div>
                 </div>
             </div>
@@ -194,10 +207,10 @@
                                 <td>{{stats.parents.total}}</td>
                             </tr>
                             <tr>
-                                <td>{{phrase.accountants}}</td>
-                                <td>{{stats.account.activated}}</td>
-                                <td>{{stats.account.inactivated}}</td>
-                                <td>{{stats.account.total}}</td>
+                                <td>{{phrase.employees}}</td>
+                                <td>{{stats.employee.activated}}</td>
+                                <td>{{stats.employee.inactivated}}</td>
+                                <td>{{stats.employee.total}}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -298,7 +311,7 @@
                     </div>
                 </div>
                 <h4 class="card-title">{{phrase.attendanceStats}}</h4>
-                <div class="table-responsive">
+                <div class="">
 
                     <table class="table table-hover table-bordered">
                         <tbody>
@@ -308,6 +321,7 @@
                                 <th>{{phrase.studentName}}</th>
                                 <th ng-show="$root.dashboardData.attendanceModel=='subject'">{{phrase.Subject}}</th>
                                 <th>{{phrase.Attendance}}</th>
+                                <th>{{phrase.notes}}</th>
                             </tr>
                             <tr ng-repeat="student in attendanceData">
                                 <td>{{student.studentRollId}}</td>
@@ -323,6 +337,7 @@
                                         <span ng-show="student.status =='4'">{{phrase.earlyDismissal}}</span>
                                     </div>
                                 </td>
+                                <td>{{student.attNotes}}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -339,7 +354,7 @@
             <div class="card-block">
                 <button ng-click="changeView('list')" class="btn pull-right btn-danger card-block-input-item">{{phrase.Return}}</button>
                 <h4 class="card-title">{{phrase.staffAttendance}}</h4>
-                <div class="table-responsive">
+                <div class="">
 
                     <form class="form-horizontal" ng-submit="staffAttendance()" name="attendance" novalidate>
                         <div class="form-group row" ng-class="{'has-error': attendance.attendanceDayFrom.$invalid}">
@@ -406,6 +421,8 @@
                                 <th>{{phrase.Date}}</th>
                                 <th>{{phrase.FullName}}</th>
                                 <th>{{phrase.Attendance}}</th>
+                                <th ng-show="$root.dashboardData.sAttendanceInOut == '1'">{{phrase.in}}</th>
+                                <th ng-show="$root.dashboardData.sAttendanceInOut == '1'">{{phrase.out}}</th>
                             </tr>
                             <tr ng-repeat="student in attendanceData">
                                 <td>{{student.date}}</td>
@@ -417,6 +434,12 @@
                                         <span ng-show="student.status =='2'">{{phrase.Late}}</span>
                                         <span ng-show="student.status =='3'">{{phrase.LateExecuse}}</span>
                                     </div>
+                                </td>
+                                <td ng-show="$root.dashboardData.sAttendanceInOut == '1'">
+                                    {{student.in_time}}
+                                </td>
+                                <td ng-show="$root.dashboardData.sAttendanceInOut == '1'">
+                                    {{student.out_time}}
                                 </td>
                             </tr>
                         </tbody>
@@ -917,5 +940,137 @@
         </div>
     </div>
 </div>
+
+<div class="row" ng-show="views.gen_cert">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-block">
+                <button ng-click="changeView('list')" class="btn pull-right btn-danger card-block-input-item">{{phrase.Return}}</button>
+                <h4 class="card-title">{{phrase.gen_cert}}</h4>
+                <div class="form">
+
+                    <form class="form-horizontal" ng-submit="certGetStdList()" name="genCert" novalidate>
+                        <div class="form-group row" ng-class="{'has-error': genCert.certId.$invalid}">
+                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.cert_name}}</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" ng-model="form.certId" name="certId" required>
+                                    <option ng-repeat="cert in certs" value="{{cert.id}}">{{cert.certificate_name}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row" ng-class="{'has-error': genCert.classId.$invalid}">
+                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.class}}</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" ng-model="form.classId" name="classId" required ng-change="subjectList()">
+                                    <option ng-repeat="class in classes" value="{{class.id}}">{{class.className}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row" ng-class="{'has-error': genCert.sectionId.$invalid}" ng-show="$root.dashboardData.enableSections == '1'">
+                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.section}}</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" ng-model="form.sectionId" ng-required="$root.dashboardData.enableSections == '1'" name="sectionId">
+                                    <option ng-repeat="section in sections" value="{{section.id}}">{{section.sectionName}} - {{section.sectionTitle}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group m-b-0">
+                            <div class="offset-sm-2 col-sm-10">
+                                <button type="submit" class="btn btn-info waves-effect waves-light" ng-disabled="genCert.$invalid">{{phrase.searchUsers}}</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <form class="form-horizontal" novalidate ng-show="certUsersList">
+
+                        <table class="table table-hover table-bordered" style="margin-top: 30px;">
+                            <tbody>
+                                <tr>
+                                    <th>{{phrase.select}}</th>
+                                    <th>{{phrase.user}}</th>
+                                    <th>{{phrase.username}}</th>
+                                    <th>{{phrase.email}}</th>
+                                </tr>
+                                <tr ng-repeat="user in certUsersList">
+                                    <td>
+                                        <input type="checkbox" checklist-model="form.selected_users" checklist-value="user.id">
+                                    </td>
+                                    <td>
+                                        <img alt="{{user.fullName}}" class="user-image img-circle" style="width:35px; height:35px;" ng-src="{{'index.php/dashboard/profileImage/'+user.id}}">
+                                        <a href="" ng-click="studentProfile( user.id )">{{user.fullName}}</a>
+                                    </td>
+                                    <td>
+                                        {{user.username}}
+                                    </td>
+                                    <td>{{user.email}}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="form-group m-b-0">
+                            <div class="col-sm-12">
+                                <button type="submit" ng-click="printCertificate()" class="btn btn-info waves-effect waves-light">{{phrase.gen_cert}}</button>
+                            </div>
+                        </div>
+
+                    </form>
+
+
+                    <div id="printableArea" style="display: none;">
+                        <div ng-repeat="user in printCertInfo.users">
+                            <div style="height: 210mm;width: 297mm;">
+                                <img src="uploads/cert/{{printCertInfo.certificate.certificate_image}}" class="cert-bg" style="height: 210mm;width: 297mm; position: absolute; z-index: 1;" />
+                                <div style="padding-top: {{printCertInfo.margins.content_margin.top}};padding-left: {{printCertInfo.margins.content_margin.left}};padding-right: {{printCertInfo.margins.content_margin.left}};">
+                                    
+                                    <div class="row">
+                                        <div class="col-sm-6 header_left" style="padding-top: {{printCertInfo.margins.header_left.top}}; padding-left: {{printCertInfo.margins.header_left.left}};z-index: 2;">
+                                            <span ng-bind-html="processvars(printCertInfo.certificate.header_left,user)"></span>
+                                        </div>
+                                        <div class="col-sm-6 header_right text-right" style="padding-top: {{printCertInfo.margins.header_left.top}}; padding-right: {{printCertInfo.margins.header_left.right}};z-index: 2;">
+                                            <span ng-bind-html="processvars(printCertInfo.certificate.header_right,user)"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-sm-12 header_middle text-center" style="padding-top: {{printCertInfo.margins.header_middle.top}}; z-index: 2;">
+                                            <span ng-bind-html="processvars(printCertInfo.certificate.header_middle,user)"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div id="main_title" class="col-sm-12 main_title text-center" style="padding-top: {{printCertInfo.margins.main_title.top}}; z-index: 2;">
+                                            <span ng-bind-html="processvars(printCertInfo.certificate.main_title,user)"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-sm-12 main_content" style="padding-top: {{printCertInfo.margins.main_content.top}}; z-index: 2;">
+                                            <span ng-bind-html="processvars(printCertInfo.certificate.main_content,user)"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-sm-4 footer_left" style="padding-top: {{printCertInfo.margins.footer_left.top}}; padding-left: {{printCertInfo.margins.footer_left.left}};z-index: 2;">
+                                            <span ng-bind-html="processvars(printCertInfo.certificate.footer_left,user)"></span>
+                                        </div>
+                                        <div class="col-sm-4 footer_middle text-center" style="padding-top: {{printCertInfo.margins.footer_middle.top}};z-index: 2;">
+                                            <span ng-bind-html="processvars(printCertInfo.certificate.footer_middle,user)"></span>
+                                        </div>
+                                        <div class="col-sm-4 footer_right text-right" style="padding-top: {{printCertInfo.margins.footer_right.top}}; padding-right: {{printCertInfo.margins.footer_right.right}};z-index: 2;">
+                                            <span ng-bind-html="processvars(printCertInfo.certificate.footer_right,user)"></span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div style="page-break-before: always;" ng-if="!$last"> </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 <modal visible="showModal"><div ng-bind-html="modalContent"></div></modal>

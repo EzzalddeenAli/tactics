@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addAdministrator}}</button>
+                <button ng-show="$root.can('Administrators.addAdministrator')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addAdministrator}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
@@ -27,7 +27,7 @@
                                 <th>{{phrase.name}}</th>
                                 <th>{{phrase.username}}</th>
                                 <th>{{phrase.email}}</th>
-                                <th>{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('Administrators.editAdministrator') || $root.can('Administrators.delAdministrator')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="admin in admins | filter:searchText">
                                 <td>
@@ -36,15 +36,12 @@
                                 </td>
                                 <td>
                                     {{admin.username}}
-                                    <br/>
-                                    <span ng-show="admin.customPermissionsType == 'full'" style="">{{phrase.fullPerm}}</span>
-                                    <span ng-show="admin.customPermissionsType != 'full'">{{phrase.customPerm}}</span>
                                 </td>
                                 <td>{{admin.email}}</td>
                                 <td>
-                                    <button ng-click="account_status(admin.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleStatus}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
-                                    <button ng-click="edit(admin.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(admin,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                    <button ng-show="$root.can('Administrators.editAdministrator')" ng-click="account_status(admin.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleStatus}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
+                                    <button ng-show="$root.can('Administrators.editAdministrator')" ng-click="edit(admin.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('Administrators.delAdministrator')" ng-click="remove(admin,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!admins.length"><td class="noTableData" colspan="5">{{phrase.noAdministrators}}</td></tr>
@@ -118,62 +115,12 @@
 
                             </div>
                         </div>
-                        <div class="form-group row" ng-class="{'has-error': addAdmin.customPermissionsType.$invalid}">
+                        <div class="form-group row" ng-class="{'has-error': addAdmin.role_perm.$invalid}">
                             <label class="col-sm-2 text-right control-label col-form-label">{{phrase.Permissions}}</label>
                             <div class="col-sm-10">
-                                <div class="radio-list">
-                                    <label>
-                                        <input type="radio" name="customPermissionsType" value="full" ng-model="form.customPermissionsType">
-                                        {{phrase.fullPerm}}
-                                    </label>
-                                </div>
-                                <div class="radio-list">
-                                    <label>
-                                        <input type="radio" name="customPermissionsType" value="custom" ng-model="form.customPermissionsType">
-                                        {{phrase.customPerm}}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row" ng-show="form.customPermissionsType == 'custom'">
-                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.Permissions}}</label>
-                            <div class="col-sm-10">
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.frontEnd" value="frontEnd"> {{phrase.frontendCMS}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.staticPages" value="staticPages"> {{phrase.staticPages}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.classSch" value="classSch"> {{phrase.classSch}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Attendance" value="Attendance"> {{phrase.Attendance}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.staffAttendance" value="staffAttendance"> {{phrase.staffAttendance}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.HostelManage" value="HostelManage"> {{phrase.HostelManage}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Library" value="Library"> {{phrase.Library}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.mediaCenter" value="mediaCenter"> {{phrase.mediaCenter}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.teachers" value="teachers"> {{phrase.teachers}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.students" value="students"> {{phrase.students}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.parents" value="parents"> {{phrase.parents}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.gradeLevels" value="gradeLevels"> {{phrase.gradeLevels}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.studyMaterial" value="studyMaterial"> {{phrase.studyMaterial}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Assignments" value="Assignments"> {{phrase.Assignments}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.homework" value="homework"> {{phrase.Homework}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.examsList" value="examsList"> {{phrase.examsList}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.onlineExams" value="onlineExams"> {{phrase.onlineExams}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.newsboard" value="newsboard"> {{phrase.newsboard}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.events" value="events"> {{phrase.events}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.accounting" value="accounting"> {{phrase.accounting}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.payroll" value="payroll"> {{phrase.Payroll}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Transportation" value="Transportation"> {{phrase.Transportation}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.classes" value="classes"> {{phrase.classes}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Subjects" value="Subjects"> {{phrase.Subjects}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Reports" value="Reports"> {{phrase.Reports}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.academicyears" value="academicyears"> {{phrase.academicyears}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Promotion" value="Promotion"> {{phrase.Promotion}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.mobileNotif" value="mobileNotif"> {{phrase.mobileNotifications}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.mailsms" value="mailsms"> {{phrase.mailsms}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.mailsmsTemplates" value="mailsmsTemplates"> {{phrase.mailsmsTemplates}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Polls" value="Polls"> {{phrase.Polls}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Dormitories" value="Dormitories"> {{phrase.Dormitories}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.generalSettings" value="generalSettings"> {{phrase.generalSettings}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Languages" value="Languages"> {{phrase.Languages}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Administrators" value="Administrators"> {{phrase.Administrators}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.dbExport" value="dbExport"> {{phrase.dbExport}} </label>
+                                <select class="form-control" name="role_perm" ng-model="form.role_perm" required>
+                                    <option ng-repeat="role in roles" value="{{role.id}}">{{role.role_title}}</option>
+                                </select>
                             </div>
                         </div>
                         <div class="form-group m-b-0">
@@ -250,62 +197,12 @@
 
                             </div>
                         </div>
-                        <div class="form-group row" ng-class="{'has-error': editAdmin.customPermissionsType.$invalid}">
+                        <div class="form-group row" ng-class="{'has-error': addAdmin.role_perm.$invalid}">
                             <label class="col-sm-2 text-right control-label col-form-label">{{phrase.Permissions}}</label>
                             <div class="col-sm-10">
-                                <div class="radio-list">
-                                    <label>
-                                        <input type="radio" name="customPermissionsType" value="full" ng-model="form.customPermissionsType">
-                                        {{phrase.fullPerm}}
-                                    </label>
-                                </div>
-                                <div class="radio-list">
-                                    <label>
-                                        <input type="radio" name="customPermissionsType" value="custom" ng-model="form.customPermissionsType">
-                                        {{phrase.customPerm}}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group row" ng-show="form.customPermissionsType == 'custom'">
-                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.Permissions}}</label>
-                            <div class="col-sm-10">
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.frontEnd" ng-checked="hasPermission('frontEnd')" value="frontEnd"> {{phrase.frontendCMS}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.staticPages" ng-checked="hasPermission('staticPages')" value="staticPages"> {{phrase.staticPages}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.classSch" ng-checked="hasPermission('classSch')" value="classSch"> {{phrase.classSch}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Attendance" ng-checked="hasPermission('Attendance')" value="Attendance"> {{phrase.Attendance}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.staffAttendance" ng-checked="hasPermission('staffAttendance')" value="staffAttendance"> {{phrase.staffAttendance}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.HostelManage" ng-checked="hasPermission('HostelManage')" value="HostelManage"> {{phrase.HostelManage}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Library" ng-checked="hasPermission('Library')" value="Library"> {{phrase.Library}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.mediaCenter" ng-checked="hasPermission('mediaCenter')" value="mediaCenter"> {{phrase.mediaCenter}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.teachers" ng-checked="hasPermission('teachers')" value="teachers"> {{phrase.teachers}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.students" ng-checked="hasPermission('students')" value="students"> {{phrase.students}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.parents" ng-checked="hasPermission('parents')" value="parents"> {{phrase.parents}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.gradeLevels" ng-checked="hasPermission('gradeLevels')" value="gradeLevels"> {{phrase.gradeLevels}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.studyMaterial" ng-checked="hasPermission('studyMaterial')" value="studyMaterial"> {{phrase.studyMaterial}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Assignments" ng-checked="hasPermission('Assignments')" value="Assignments"> {{phrase.Assignments}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.homework" ng-checked="hasPermission('homework')" value="homework"> {{phrase.Homework}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.examsList" ng-checked="hasPermission('examsList')" value="examsList"> {{phrase.examsList}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.onlineExams" ng-checked="hasPermission('onlineExams')" value="onlineExams"> {{phrase.onlineExams}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.newsboard" ng-checked="hasPermission('newsboard')" value="newsboard"> {{phrase.newsboard}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.events" ng-checked="hasPermission('events')" value="events"> {{phrase.events}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.accounting" ng-checked="hasPermission('accounting')" value="accounting"> {{phrase.accounting}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.payroll" ng-checked="hasPermission('payroll')" value="payroll"> {{phrase.Payroll}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Transportation" ng-checked="hasPermission('Transportation')" value="Transportation"> {{phrase.Transportation}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.classes" ng-checked="hasPermission('classes')" value="classes"> {{phrase.classes}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Subjects" ng-checked="hasPermission('Subjects')" value="Subjects"> {{phrase.Subjects}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Reports" ng-checked="hasPermission('Reports')" value="Reports"> {{phrase.Reports}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.academicyears" ng-checked="hasPermission('academicyears')" value="academicyears"> {{phrase.academicyears}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Promotion" ng-checked="hasPermission('Promotion')" value="Promotion"> {{phrase.Promotion}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.mobileNotif" ng-checked="hasPermission('mobileNotif')" value="mobileNotif"> {{phrase.mobileNotifications}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.mailsms" ng-checked="hasPermission('mailsms')" value="mailsms"> {{phrase.mailsms}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.mailsmsTemplates" ng-checked="hasPermission('mailsmsTemplates')" value="mailsmsTemplates"> {{phrase.mailsmsTemplates}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Polls" ng-checked="hasPermission('Polls')" value="Polls"> {{phrase.Polls}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Dormitories" ng-checked="hasPermission('Dormitories')" value="Dormitories"> {{phrase.Dormitories}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.generalSettings" ng-checked="hasPermission('generalSettings')" value="generalSettings"> {{phrase.generalSettings}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Languages" ng-checked="hasPermission('Languages')" value="Languages"> {{phrase.Languages}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.Administrators" ng-checked="hasPermission('Administrators')" value="Administrators"> {{phrase.Administrators}} </label>
-                                <label class="col-sm-4"><input type="checkbox" name="customPermissions[]" ng-model="form.customPermissions.dbExport" ng-checked="hasPermission('dbExport')" value="dbExport"> {{phrase.dbExport}} </label>
+                                <select class="form-control" name="role_perm" ng-model="form.role_perm" required>
+                                    <option ng-repeat="role in roles" value="{{role.id}}">{{role.role_title}}</option>
+                                </select>
                             </div>
                         </div>
                         <div class="form-group m-b-0">

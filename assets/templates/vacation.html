@@ -50,29 +50,99 @@
 
                     <form class="form-horizontal" ng-submit="confirmVacation()" name="form" novalidate>
                         <table class="table table-bordered">
-                            <tbody><tr>
-                                <th>{{phrase.Date}}</th>
-                                <th>{{phrase.notes}}</th>
-                            </tr>
-                            <tr ng-repeat="date in vacation">
-                                <td>{{date.date}}</td>
-                                <td>
-                                    <span ng-show="date.status == 'dow'">{{phrase.weeksDaysOff}}</span>
-                                    <span ng-show="date.status == 'offv'">{{phrase.nationalVacDays}}</span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <br/>
-                    <div lass="form-group row">
-                        <div class="col-sm-offset-2 col-sm-10">
-                            <button type="submit" class="btn btn-info btn-default">{{phrase.confirmVacation}}</button>
+                            <tbody>
+                                <tr>
+                                    <th>{{phrase.Date}}</th>
+                                    <th>{{phrase.notes}}</th>
+                                </tr>
+                                <tr ng-repeat="date in vacation">
+                                    <td>{{date.date}}</td>
+                                    <td>
+                                        <span ng-show="date.status == 'dow'">{{phrase.weeksDaysOff}}</span>
+                                        <span ng-show="date.status == 'offv'">{{phrase.nationalVacDays}}</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <br/>
+                        <div lass="form-group row">
+                            <div class="col-sm-offset-2 col-sm-10">
+                                <button type="submit" class="btn btn-info btn-default">{{phrase.confirmVacation}}</button>
+                            </div>
                         </div>
-                    </div>
-                </form>
+                    </form>
 
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<div class="row" ng-show="views.list_approve">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-block">
+                <h4 class="card-title">{{phrase.appVacation}}</h4>
+                <div class="form">
+
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th>{{phrase.user}}</th>
+                                <th>{{phrase.role}}</th>
+                                <th>{{phrase.Date}}</th>
+                                <th>{{phrase.Operations}}</th>
+                            </tr>
+                            <tr ng-repeat="request in vacation_requests">
+                                <td>
+                                    <img alt="{{request.fullName}}" class="user-image img-circle" style="width:35px; height:35px;" ng-src="{{'index.php/dashboard/profileImage/'+request.userid}}">
+                                    <a href="" ng-click="studentProfile( request.userid )">{{request.fullName}} - {{request.email}}</a>
+                                </td>
+                                <td>{{request.role}}</td>
+                                <td>{{request.vacDate}}</td>
+                                <td>
+                                    <button type="button" ng-click="approveVacation(request.id,1,$index)" class="btn btn-info btn-default">{{phrase.acceptedVacation}}</button>
+                                    <button type="button" ng-click="approveVacation(request.id,0,$index)" class="btn btn-danger btn-default">{{phrase.rejectedVacation}}</button>                                        
+                                </td>
+                            </tr>
+                            <tr ng-show="!vacation_requests.length"><td class="noTableData" colspan="4">{{phrase.noDataAvailable}}</td></tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<div class="row" ng-show="views.list_mine">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-block">
+                <h4 class="card-title">{{phrase.myVacation}}</h4>
+                <div class="form">
+
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th>{{phrase.Date}}</th>
+                                <th>{{phrase.Status}}</th>
+                            </tr>
+                            <tr ng-repeat="request in my_requests">
+                                <td>{{request.vacDate}}</td>
+                                <td>
+                                    <span style="color:green;" ng-show="request.acceptedVacation == '1'">{{phrase.acceptedVacation}}</span>
+                                    <span style="color:red;" ng-show="request.acceptedVacation == '0'">{{phrase.rejectedVacation}}</span>
+                                    <span ng-show="request.acceptedVacation == '-1'">{{phrase.waitAction}}</span>                                    
+                                </td>
+                            </tr>
+                            <tr ng-show="!my_requests.length"><td class="noTableData" colspan="4">{{phrase.noDataAvailable}}</td></tr>
+                        </tbody>
+                    </table>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

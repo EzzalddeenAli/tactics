@@ -8,7 +8,7 @@ class make_paymentController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,14 +21,15 @@ class make_paymentController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "account") exit;
-
-		if(!$this->panelInit->hasThePerm('payroll')){
-			exit;
-		}
+		
 	}
 
 	public function search_user(){
+
+		if(!$this->panelInit->can( array('Payroll.makeUsrPayment') )){
+			exit;
+		}
+
 		$retArray = array();
 		$retArray['employees'] = array();
 
@@ -71,6 +72,11 @@ class make_paymentController extends Controller {
 	}
 
 	function get_user_details($id,$data_only=false){
+
+		if(!$this->panelInit->can( array('Payroll.makeUsrPayment') )){
+			exit;
+		}
+
 		$to_return = array();
 
 		//Get User History
@@ -106,6 +112,10 @@ class make_paymentController extends Controller {
 	}
 
 	function make_user_payment_submit($id){
+
+		if(!$this->panelInit->can( array('Payroll.makeUsrPayment') )){
+			exit;
+		}
 
 		$user = \User::where('id',$id)->select('id','username','email','fullName','role','salary_type','salary_base_id')->first()->toArray();
 
@@ -155,5 +165,21 @@ class make_paymentController extends Controller {
 		$payroll_history->save();
 
 		return $this->panelInit->apiOutput(true,$this->panelInit->language['makeUsrPayment'],$this->panelInit->language['paymentMadeSuccess'], $this->get_user_details($id,true) );
+	}
+
+	function make_user_payment_remove($id){
+
+		if(!$this->panelInit->can( array('Payroll.delUsrPayment') )){
+			exit;
+		}
+
+		if ( $postDelete = \payroll_history::where('id', $id)->first() )
+        {
+            $postDelete->delete();
+            return $this->panelInit->apiOutput(true,$this->panelInit->language['delUsrPayment'],$this->panelInit->language['usrPayDeleted']);
+        }else{
+            return $this->panelInit->apiOutput(false,$this->panelInit->language['delUsrPayment'],$this->panelInit->language['usrPayNotExist']);
+        }
+
 	}
 }

@@ -13,10 +13,10 @@
         <div class="card">
             <div class="card-block">
                 <div class="list-group">
-                    <a href="#/account/invoices" class="list-group-item" ng-class="{'active': views.invoices || views.invoiceDetails}">{{phrase.myInvoices}}</a>
-                    <a href="#/account" class="list-group-item" ng-class="{'active': views.profile}">{{phrase.ChgProfileData}}</a>
-                    <a href="#/account/email" class="list-group-item" ng-class="{'active': views.email}">{{phrase.chgEmailAddress}}</a>
-                    <a href="#/account/password" class="list-group-item" ng-class="{'active': views.password}">{{phrase.chgPassword}}</a>
+                    <a ng-show="$root.can('AccountSettings.myInvoices')" href="portal#/account/invoices" class="list-group-item" ng-class="{'active': views.invoices || views.invoiceDetails}">{{phrase.myInvoices}}</a>
+                    <a ng-show="$root.can('AccountSettings.ChgProfileData')" href="portal#/account" class="list-group-item" ng-class="{'active': views.profile}">{{phrase.ChgProfileData}}</a>
+                    <a ng-show="$root.can('AccountSettings.chgEmailAddress')" href="portal#/account/email" class="list-group-item" ng-class="{'active': views.email}">{{phrase.chgEmailAddress}}</a>
+                    <a ng-show="$root.can('AccountSettings.chgPassword')" href="portal#/account/password" class="list-group-item" ng-class="{'active': views.password}">{{phrase.chgPassword}}</a>
                 </div>
             </div>
         </div>
@@ -25,7 +25,7 @@
         <div class="card">
             <div class="card-block">
 
-                <section class="content" ng-show="views.invoices">
+                <section  class="content" ng-show="views.invoices && $root.can('AccountSettings.myInvoices')">
                     <div class="box col-xs-12">
                         <div class="box-header">
                             <h3 class="box-title">{{phrase.myInvoices}}</h3>
@@ -64,13 +64,13 @@
                     </div>
                 </section>
 
-                <section class="content" ng-show="views.profile">
+                <section class="content" ng-show="views.profile && $root.can('AccountSettings.ChgProfileData')">
                     <div class="box col-xs-12">
                         <div class="box-header">
                             <h3 class="box-title">{{phrase.ChgProfileData}}</h3>
                         </div>
                         <div class="box-body table-responsive">
-                            <form class="form-horizontal" name="editDorm" role="form" ng-upload="saveProfile()" method="post" action="{{'index.php/accountSettings/profile'}}" novalidate>
+                            <form class="form-horizontal" name="editDorm" role="form" ng-upload="saveProfile(content)" method="post" action="{{'index.php/accountSettings/profile'}}" novalidate>
                                 <div class="form-group row" ng-class="{'has-error': editDorm.fullName.$invalid}">
                                     <label class="col-sm-3 text-right control-label col-form-label">{{phrase.FullName}} * </label>
                                     <div class="col-sm-9">
@@ -299,7 +299,7 @@
                     </div>
                 </section>
 
-                <section class="content" ng-show="views.email">
+                <section class="content" ng-show="views.email && $root.can('AccountSettings.chgEmailAddress')">
                     <div class="box col-xs-12">
                         <div class="box-header">
                             <h3 class="box-title">{{phrase.chgEmailAddress}}</h3>
@@ -334,7 +334,7 @@
                     </div>
                 </section>
 
-                <section class="content" ng-show="views.password">
+                <section class="content" ng-show="views.password && $root.can('AccountSettings.chgPassword')">
                     <div class="box col-xs-12">
                         <div class="box-header">
                             <h3 class="box-title">{{phrase.chgPassword}}</h3>

@@ -8,7 +8,7 @@ class frontendController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,18 +21,19 @@ class frontendController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin") exit;
 
-		if(!$this->panelInit->hasThePerm('frontEnd')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("frontendCMSpages.list","frontendCMSpages.addPage","frontendCMSpages.editPage","frontendCMSpages.delPage") )){
+			exit;
+		}
+
 		$toReturn = array();
 		$toReturn['frontend_baseurl'] = $this->getBaseUrl()."/";
-		$toReturn['pages'] = \frontend_pages::get();
+		$toReturn['pages'] = \frontend_pages::orderBy('page_order','ASC')->get();
 
 		//get tamplates
 		$path = 'assets/frontend/'.$this->panelInit->settingsArray['cms_template'].'/templates';
@@ -51,6 +52,11 @@ class frontendController extends Controller {
 	}
 
 	public function delete($id){
+
+		if(!$this->panelInit->can( "frontendCMSpages.delPage" )){
+			exit;
+		}
+
 		if ( $postDelete = \frontend_pages::where('id',$id)->first() )
         {
             $postDelete->delete();
@@ -61,6 +67,11 @@ class frontendController extends Controller {
 	}
 
 	public function create(){
+
+		if(!$this->panelInit->can( "frontendCMSpages.addPage" )){
+			exit;
+		}
+
 		$frontend_pages = new \frontend_pages();
 		$frontend_pages->page_title = \Input::get('page_title');
 		$frontend_pages->page_permalink = \Input::get('page_permalink');
@@ -88,12 +99,18 @@ class frontendController extends Controller {
 		}else{
 			$frontend_pages->page_slider_images = "";
 		}
+		$frontend_pages->page_order = \Input::get('page_order');
 		$frontend_pages->save();
 
 		return $this->panelInit->apiOutput(true,$this->panelInit->language['addPage'],$this->panelInit->language['pageCreated'],$frontend_pages->toArray());
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "frontendCMSpages.editPage" )){
+			exit;
+		}
+
 		$frontend_page = \frontend_pages::where('id',$id)->first()->toArray();
 		if($frontend_page['page_publish_specific_date'] > 0){
 			$frontend_page['page_publish_specific_date'] = $this->panelInit->unix_to_date( $frontend_page['page_publish_specific_date'] );			
@@ -111,6 +128,11 @@ class frontendController extends Controller {
 	}
 
 	function edit($id){
+
+		if(!$this->panelInit->can( "frontendCMSpages.editPage" )){
+			exit;
+		}
+
 		$frontend_pages = \frontend_pages::find($id);
 		$frontend_pages->page_title = \Input::get('page_title');
 		$frontend_pages->page_permalink = \Input::get('page_permalink');
@@ -138,12 +160,18 @@ class frontendController extends Controller {
 		}else{
 			$frontend_pages->page_slider_images = "";
 		}
+		$frontend_pages->page_order = \Input::get('page_order');
 		$frontend_pages->save();
 
 		return $this->panelInit->apiOutput(true,$this->panelInit->language['editPage'],$this->panelInit->language['pageModified'],$frontend_pages->toArray());
 	}
 
 	function get_settings(){
+
+		if(!$this->panelInit->can( array("adminTasks.frontendCMS") )){
+			exit;
+		}
+
 		$settingsArray = array();
 		$settings = \settings::whereIn('fieldName',array('cms_active','cms_theme','cms_template','cms_facebook','cms_google','cms_twitter','cms_footer_left','cms_footer_right'))->get();
 		foreach ($settings as $setting) {
@@ -154,6 +182,11 @@ class frontendController extends Controller {
 	}
 
 	function set_settings(){
+
+		if(!$this->panelInit->can( array("adminTasks.frontendCMS") )){
+			exit;
+		}
+
 		$settingsData = \Input::All();
 
 		foreach($settingsData as $key => $value){
@@ -175,6 +208,11 @@ class frontendController extends Controller {
 	}
 
 	function gen_permalink(){
+
+		if(!$this->panelInit->can( "frontendCMSpages.editPage" )){
+			exit;
+		}
+
 		$page_title = $this->toAscii( \Input::get('page_title') );
 		if( $this->checkRoute($page_title) && \frontend_pages::where('page_permalink',$page_title)->count() > 0 )
 		{
@@ -184,6 +222,11 @@ class frontendController extends Controller {
 	}
 
 	function check_permalink($id){
+
+		if(!$this->panelInit->can( "frontendCMSpages.editPage" )){
+			exit;
+		}
+		
 		$page_title = $this->toAscii( \Input::get('new_permalink') );
 
 		$frontend_pages_check = \frontend_pages::where('page_permalink',$page_title);
@@ -191,7 +234,7 @@ class frontendController extends Controller {
 			$frontend_pages_check = $frontend_pages_check->where('id','!=',$id);
 		}
 
-		if( $this->checkRoute($page_title) && $frontend_pages_check->count() > 0 )
+		if( $this->checkRoute($page_title) || $frontend_pages_check->count() > 0 )
 		{
 			return $this->panelInit->apiOutput(false,$this->panelInit->language['permalink'],$this->panelInit->language['permalinkCantUsed']);
 		}

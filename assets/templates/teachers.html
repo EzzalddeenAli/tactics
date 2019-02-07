@@ -51,10 +51,10 @@
     <div class="col-12 listContent">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addTeacher}}</button>
+                <button ng-show="$root.can('teachers.addTeacher')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addTeacher}}</button>
                 <button ng-click="toggleSearch()" class="btn pull-right btn-success card-block-input-item">{{phrase.advSearch}}</button>
-                <button ng-click="waitingApproval()" class="btn pull-right btn-success card-block-input-item">{{phrase.waitingApproval}}</button>
-                <div class="pull-right card-block-input-group card-block-input-item">
+                <button ng-show="$root.can('teachers.Approve')" ng-click="waitingApproval()" class="btn pull-right btn-success card-block-input-item">{{phrase.waitingApproval}}</button>
+                <div ng-show="$root.can('teachers.Export')" class="pull-right card-block-input-group card-block-input-item">
                     <div class="btn-group no-print">
                         <button type="button" class="btn btn-success btn-flat">{{phrase.Export}}</button>
                         <button type="button" class="btn btn-success btn-flat dropdown-toggle" data-toggle="dropdown">
@@ -67,7 +67,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="pull-right card-block-input-group card-block-input-item">
+                <div ng-show="$root.can('teachers.Import')" class="pull-right card-block-input-group card-block-input-item">
                     <div class="btn-group no-print">
                         <button type="button" class="btn btn-success btn-flat">{{phrase.Import}}</button>
                         <button type="button" class="btn btn-success btn-flat dropdown-toggle" data-toggle="dropdown">
@@ -104,23 +104,23 @@
                                     <i ng-show="$root.dashboardData.sort.teachers == 'username DESC'" ng-click="sortItems('username ASC')" class="ahref mdi mdi-arrow-up-bold"></i>
                                 </th>
                                 <th>{{phrase.email}}</th>
-                                <th class="no-print">{{phrase.Operations}}</th>
+                                <th class="no-print" ng-show="$root.can('teachers.EditTeacher') || $root.can('teachers.EditTeacher') || $root.can('teachers.delTeacher')">{{phrase.Operations}}</th>
                             </tr>
                             <tr dir-paginate="teacher in teachers | itemsPerPage:20" total-items="totalItems">
                                 <td>{{teacher.id}}</td>
                                 <td>
                                     <img alt="{{teacher.fullName}}" class="user-image img-circle" style="width:35px; height:35px;" ng-src="{{'index.php/dashboard/profileImage/'+teacher.id}}">
                                     <a href="" ng-click="teacherProfile( teacher.id )">{{teacher.fullName}}</a>
-                                    <i ng-class="{'color_red':teacher.account_active==0,'color_green':teacher.account_active==1}" class="fa fa-lightbulb-o"></i>
-                                    <span ng-if="teacher.isLeaderBoard != '' && teacher.isLeaderBoard != null"><br/><i class="fa fa-trophy"></i> {{phrase.leaderboard}} <a ng-click="removeLeaderBoard(teacher.id,$index)"><i class="fa fa-trash-o"></i></a></span>
+                                    <i ng-show="$root.can('teachers.EditTeacher')" ng-class="{'color_red':teacher.account_active==0,'color_green':teacher.account_active==1}" class="fa fa-lightbulb-o"></i>
+                                    <span ng-if="$root.can('teachers.teacLeaderBoard') && teacher.isLeaderBoard != '' && teacher.isLeaderBoard != null"><br/><i class="fa fa-trophy"></i> {{phrase.leaderboard}} <a ng-click="removeLeaderBoard(teacher.id,$index)"><i class="fa fa-trash-o"></i></a></span>
                                 </td>
                                 <td>{{teacher.username}}</td>
                                 <td>{{teacher.email}}</td>
-                                <td class="no-print">
-                                    <button ng-click="account_status(teacher.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleStatus}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
-                                    <button ng-if="teacher.isLeaderBoard == '' || teacher.isLeaderBoard == null" ng-click="leaderBoard(teacher.id,$index)" type="button" class="btn btn-success btn-circle" title="{{phrase.leaderboard}}" tooltip><i class="fa fa-trophy"></i></button>
-                                    <button ng-click="edit(teacher.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(teacher,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td class="no-print" ng-show="$root.can('teachers.EditTeacher') || $root.can('teachers.EditTeacher') || $root.can('teachers.delTeacher')">
+                                    <button ng-show="$root.can('teachers.EditTeacher')" ng-click="account_status(teacher.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleStatus}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
+                                    <button ng-if="$root.can('teachers.teacLeaderBoard') && (teacher.isLeaderBoard == '' || teacher.isLeaderBoard == null)" ng-click="leaderBoard(teacher.id,$index)" type="button" class="btn btn-success btn-circle" title="{{phrase.leaderboard}}" tooltip><i class="fa fa-trophy"></i></button>
+                                    <button ng-show="$root.can('teachers.EditTeacher')" ng-click="edit(teacher.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('teachers.delTeacher')" ng-click="remove(teacher,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!teachers.length"><td class="noTableData" colspan="5">{{phrase.noTeachers}}</td></tr>
@@ -270,6 +270,14 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.trans_vehicles}}</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" name="transport_vehicle" ng-model="form.transport_vehicle">
+                                    <option ng-repeat="(key,item) in transports[form.transport].vehicles" value="{{key}}">{{item}}</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="form-group row" ng-class="{'has-error': addAdmin.user_position.$invalid}">
                             <label class="col-sm-2 text-right control-label col-form-label">{{phrase.userPosition}} </label>
                             <div class="col-sm-10">
@@ -404,6 +412,14 @@
                             <div class="col-sm-10">
                                 <select class="form-control" name="transport" ng-model="form.transport" >
                                     <option ng-repeat="transport in transports" value="{{transport.id}}">{{transport.transportTitle}}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label class="col-sm-2 text-right control-label col-form-label">{{phrase.trans_vehicles}}</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" name="transport_vehicle" ng-model="form.transport_vehicle">
+                                    <option ng-repeat="(key,item) in transports[form.transport].vehicles" value="{{key}}">{{item}}</option>
                                 </select>
                             </div>
                         </div>

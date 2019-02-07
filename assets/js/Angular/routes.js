@@ -30,9 +30,9 @@ OraSchool.config(function($routeProvider,$locationProvider) {
         }
     })
 
-    .when('/accountants', {
-        templateUrl : 'assets/templates/accountants.html',
-        controller  : 'accountantsController',
+    .when('/employees', {
+        templateUrl : 'assets/templates/employees.html',
+        controller  : 'employeesController',
         resolve: {
             essentialData: function(srvLibrary) {
                 return srvLibrary.getEssentials();
@@ -53,6 +53,27 @@ OraSchool.config(function($routeProvider,$locationProvider) {
     .when('/students', {
         templateUrl : 'assets/templates/students.html',
         controller  : 'studentsController',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/students/admission', {
+        templateUrl : 'assets/templates/students.html',
+        controller  : 'studentsController',
+        methodName: 'admission',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/student/categories', {
+        templateUrl : 'assets/templates/student_categories.html',
+        controller  : 'student_categories',
         resolve: {
             essentialData: function(srvLibrary) {
                 return srvLibrary.getEssentials();
@@ -161,6 +182,39 @@ OraSchool.config(function($routeProvider,$locationProvider) {
         }
     })
 
+    .when('/lib_subscription', {
+        templateUrl : 'assets/templates/library.html',
+        controller  : 'libraryController',
+        methodName: 'subscription',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+
+    .when('/library_issues', {
+        templateUrl : 'assets/templates/library_issues.html',
+        controller  : 'library_issues',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/library_return', {
+        templateUrl : 'assets/templates/library_issues.html',
+        controller  : 'library_issues',
+        methodName: 'library_return',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
     .when('/account', {
         templateUrl : 'assets/templates/accountSettings.html',
         controller  : 'accountSettingsController',
@@ -218,6 +272,36 @@ OraSchool.config(function($routeProvider,$locationProvider) {
     .when('/attendance', {
         templateUrl : 'assets/templates/attendance.html',
         controller  : 'attendanceController',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/attendance_report', {
+        templateUrl : 'assets/templates/attendance_report.html',
+        controller  : 'attendance_reportController',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/staffAttendance', {
+        templateUrl : 'assets/templates/staffAttendance.html',
+        controller  : 'staffAttendanceController',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/staffAttendance_report', {
+        templateUrl : 'assets/templates/staffAttendance_report.html',
+        controller  : 'staffAttendance_reportController',
         resolve: {
             essentialData: function(srvLibrary) {
                 return srvLibrary.getEssentials();
@@ -348,6 +432,27 @@ OraSchool.config(function($routeProvider,$locationProvider) {
     .when('/transports', {
         templateUrl : 'assets/templates/transportation.html',
         controller  : 'TransportsController',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+
+    .when('/transport_vehicles', {
+        templateUrl : 'assets/templates/transport_vehicles.html',
+        controller  : 'transport_vehicles',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/transport_members', {
+        templateUrl : 'assets/templates/transportation.html',
+        controller  : 'transport_members',
         resolve: {
             essentialData: function(srvLibrary) {
                 return srvLibrary.getEssentials();
@@ -579,16 +684,6 @@ OraSchool.config(function($routeProvider,$locationProvider) {
         }
     })
 
-    .when('/staffAttendance', {
-        templateUrl : 'assets/templates/staffAttendance.html',
-        controller  : 'staffAttendanceController',
-        resolve: {
-            essentialData: function(srvLibrary) {
-                return srvLibrary.getEssentials();
-            }
-        }
-    })
-
     .when('/reports', {
         templateUrl : 'assets/templates/reports.html',
         controller  : 'reportsController',
@@ -602,6 +697,28 @@ OraSchool.config(function($routeProvider,$locationProvider) {
     .when('/vacation', {
         templateUrl : 'assets/templates/vacation.html',
         controller  : 'vacationController',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/vacation/approve', {
+        templateUrl : 'assets/templates/vacation.html',
+        controller  : 'vacationController',
+        methodName  : 'approve',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/vacation/mine', {
+        templateUrl : 'assets/templates/vacation.html',
+        controller  : 'vacationController',
+        methodName  : 'mine',
         resolve: {
             essentialData: function(srvLibrary) {
                 return srvLibrary.getEssentials();
@@ -689,6 +806,220 @@ OraSchool.config(function($routeProvider,$locationProvider) {
         }
     })
 
+    .when('/roles', {
+        templateUrl : 'assets/templates/roles.html',
+        controller  : 'rolesController',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+    
+    .when('/wel_office_cat', {
+        templateUrl : 'assets/templates/wel_office_cat.html',
+        controller  : 'wel_office_cat',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+    
+    .when('/visitors', {
+        templateUrl : 'assets/templates/visitors.html',
+        controller  : 'visitors',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/visitors/:viewId', {
+        templateUrl : 'assets/templates/visitors.html',
+        controller  : 'visitors',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/phone_calls', {
+        templateUrl : 'assets/templates/phone_calls.html',
+        controller  : 'phone_calls',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/postal', {
+        templateUrl : 'assets/templates/postal.html',
+        controller  : 'postal',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+
+    .when('/con_mess', {
+        templateUrl : 'assets/templates/con_mess.html',
+        controller  : 'con_mess',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/con_mess/:viewId', {
+        templateUrl : 'assets/templates/con_mess.html',
+        controller  : 'con_mess',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/departments', {
+        templateUrl : 'assets/templates/departments.html',
+        controller  : 'departments',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/designations', {
+        templateUrl : 'assets/templates/designations.html',
+        controller  : 'designations',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/enquiries', {
+        templateUrl : 'assets/templates/enquiries.html',
+        controller  : 'enquiries',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+
+    .when('/enquiries/:viewId', {
+        templateUrl : 'assets/templates/enquiries.html',
+        controller  : 'enquiries',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/complaints', {
+        templateUrl : 'assets/templates/complaints.html',
+        controller  : 'complaints',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+
+    .when('/complaints/:viewId', {
+        templateUrl : 'assets/templates/complaints.html',
+        controller  : 'complaints',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/inv_cat', {
+        templateUrl : 'assets/templates/inv_cat.html',
+        controller  : 'inv_cat',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/suppliers', {
+        templateUrl : 'assets/templates/suppliers.html',
+        controller  : 'suppliers',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/stores', {
+        templateUrl : 'assets/templates/stores.html',
+        controller  : 'stocksstores',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/items_code', {
+        templateUrl : 'assets/templates/items_code.html',
+        controller  : 'items_code',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/items_stock', {
+        templateUrl : 'assets/templates/items_stock.html',
+        controller  : 'items_stock',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+    .when('/inv_issue', {
+        templateUrl : 'assets/templates/inv_issue.html',
+        controller  : 'inv_issue',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
+
+    .when('/certificates', {
+        templateUrl : 'assets/templates/certificates.html',
+        controller  : 'certificatesController',
+        resolve: {
+            essentialData: function(srvLibrary) {
+                return srvLibrary.getEssentials();
+            }
+        }
+    })
+
     .otherwise({
         redirectTo:'/'
     });
@@ -731,6 +1062,40 @@ OraSchool.factory('srvLibrary', ['$http','$rootScope', function($http,$rootScope
     return sdo;
 }]);
 
+OraSchool.directive('fileModel', ['$parse', function ($parse) {
+    return {
+        restrict: 'A',
+        link: function(scope, element, attrs) {
+            var model = $parse(attrs.fileModel);
+            var modelSetter = model.assign;
+            
+            element.bind('change', function(){
+                scope.$apply(function(){
+                    modelSetter(scope, element[0].files[0]);
+                });
+            });
+        }
+    };
+}]);
+
+OraSchool.service('fileUpload', ['$http', function ($http) {
+    this.uploadFileToUrl = function(file, uploadUrl){
+        var fd = new FormData();
+        angular.forEach(file, function(value, key) {
+            fd.append(key, value);
+        });
+        $http.post(uploadUrl, fd, {
+            transformRequest: angular.identity,
+            headers: {'Content-Type': undefined}
+        })
+        .success(function(){
+        })
+        .error(function(){
+        });
+    }
+}]);
+
+
 OraSchool.factory('dataFactory', function($http) {
     var myService = {
         httpRequest: function(url,method,params,dataPost,upload) {
@@ -750,10 +1115,22 @@ OraSchool.factory('dataFactory', function($http) {
             if (typeof dataPost != 'undefined'){
                 passParameters.data = dataPost;
             }
-
+            
             if (typeof upload != 'undefined'){
-                passParameters.upload = upload;
-            }
+                var fd = new FormData();
+
+                angular.forEach(dataPost, function(value, key) {
+                    if(typeof value == 'object' && upload.indexOf(key) == -1 ){
+                        value = JSON.stringify(value);
+                    }
+                    fd.append(key, value);
+                });
+
+                passParameters.data = fd;
+
+                passParameters.transformRequest = angular.identity;
+                passParameters.headers = {'Content-Type': undefined};
+            }        
 
             var promise = $http(passParameters).then(function (response) {
                 if(typeof response.data == 'string' && response.data != 1){
@@ -833,8 +1210,10 @@ OraSchool.directive('datePicker', function($parse, $timeout,$rootScope){
 
                 if(typeof attrs.id == "undefined"){
                     $(".datemask").calendarsPicker({calendar: calendar,dateFormat:dateformat,showAnim:''});
+                    $(".datemask").attr("autocomplete", "off");
                 }else{
                     $("#"+attrs.id).calendarsPicker({calendar: calendar,dateFormat:dateformat,showAnim:''});
+                    $("#"+attrs.id).attr("autocomplete", "off");
                 }
             };
         }
@@ -1213,7 +1592,12 @@ OraSchool.directive('ckEditor', function($parse, $timeout,$rootScope){
         link: function ($scope, element, attrs, ngModel) {
 
             if($rootScope.dashboardData.wysiwyg_type == "advanced"){
-                var ck = CKEDITOR.replace(elm[0]);
+                var ckconfig = {};
+                ckconfig.enterMode = CKEDITOR.ENTER_BR;
+                ckconfig.shiftEnterMode = CKEDITOR.ENTER_P;
+                ckconfig.extraPlugins = 'font,justify';
+
+                var ck = CKEDITOR.replace(element[0],ckconfig);
 
                 ck.on('pasteState', function () {
                     $scope.$apply(function () {
@@ -1368,8 +1752,8 @@ OraSchool.directive('tooltip', function(){
         }
     };
 });
-OraSchool.directive('showtab',
-function () {
+
+OraSchool.directive('showtab',function () {
     return {
         link: function (scope, element, attrs) {
             element.click(function(e) {
@@ -1380,6 +1764,33 @@ function () {
     };
 });
 
+OraSchool.directive('tabheads',function () {
+    return {
+        link: function (scope, element, attrs) {
+            $(element).children().first().addClass('active'); 
+        }
+    };
+});
+
+OraSchool.directive('tabcontent',function () {
+    return {
+        link: function (scope, element, attrs) {
+            $(element).children().first().addClass('active'); 
+        }
+    };
+});
+
+OraSchool.directive('parseStyle', function($interpolate) {
+    return function(scope, elem) {
+        console.log(elem.html());
+        var exp = $interpolate(elem.html()),
+            watchFunc = function () { return exp(scope); };
+
+        scope.$watch(watchFunc, function (html) {
+            elem.html(html);
+        });
+    };
+});
 
 OraSchool.filter('object2Array', function() {
     return function(input) {

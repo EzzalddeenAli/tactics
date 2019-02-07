@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addPage}}</button>
+                <button ng-show="$root.can('frontendCMSpages.addPage')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addPage}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" name="table_search" ng-model="searchText" placeholder="{{phrase.Search}}" class="form-control">
@@ -27,7 +27,7 @@
                                 <th>{{phrase.name}}</th>
                                 <th>{{phrase.permalink}}</th>
                                 <th>{{phrase.Visibility}} / {{phrase.Status}}</th>
-                                <th>{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('frontendCMSpages.editPage') || $root.can('frontendCMSpages.delPage')">{{phrase.Operations}}</th>
                             </tr>
                             <tr ng-repeat="page in pages | filter:searchText">
                                 <td>
@@ -39,9 +39,9 @@
                                 <td>
                                     {{page.page_visibility}} / {{page.page_status}}
                                 </td>
-                                <td>
-                                    <button ng-click="edit(page.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-click="remove(page,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('frontendCMSpages.editPage') || $root.can('frontendCMSpages.delPage')">
+                                    <button ng-show="$root.can('frontendCMSpages.editPage')" ng-click="edit(page.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('frontendCMSpages.delPage')" ng-click="remove(page,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!pages.length"><td class="noTableData" colspan="5">{{phrase.noDataAvailable}}</td></tr>
@@ -202,6 +202,13 @@
                                     <label class="col-sm-4 text-right control-label col-form-label">{{phrase.specificDate}}</label>
                                     <div class="col-sm-8">
                                         <input date-picker type="text" id="datemask" name="page_publish_specific_date" ng-model="form.page_publish_specific_date" class="form-control" ng-required="form.page_publish_date == 'specific_date'" placeholder="{{phrase.specificDate}}">
+                                    </div>
+                                </div>
+
+                                <div class="form-group row" ng-class="{'has-error': add_page.page_order.$invalid}">
+                                    <label class="col-sm-4 text-right control-label col-form-label">{{phrase.order}}</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" name="page_order" ng-model="form.page_order" class="form-control" required placeholder="{{phrase.order}}">
                                     </div>
                                 </div>
 

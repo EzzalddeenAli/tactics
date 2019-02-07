@@ -8,7 +8,7 @@ class ClassesController extends Controller {
 	var $layout = 'dashboard';
 
 	public function __construct(){
-		if(app('request')->header('Authorization') != ""){
+		if(app('request')->header('Authorization') != "" || \Input::has('token')){
 			$this->middleware('jwt.auth');
 		}else{
 			$this->middleware('authApplication');
@@ -21,15 +21,15 @@ class ClassesController extends Controller {
 		if(!isset($this->data['users']->id)){
 			return \Redirect::to('/');
 		}
-		if($this->data['users']->role != "admin" AND $this->data['users']->role != "teacher") exit;
-
-		if(!$this->panelInit->hasThePerm('classes')){
-			exit;
-		}
 	}
 
 	public function listAll()
 	{
+
+		if(!$this->panelInit->can( array("classes.list","classes.addClass","classes.editClass","classes.delClass") )){
+			exit;
+		}
+
 		$toReturn = array();
 		$teachers = \User::where('role','teacher')->select('id','fullName')->get()->toArray();
 		$toReturn['dormitory'] =  \dormitories::get()->toArray();
@@ -71,7 +71,10 @@ class ClassesController extends Controller {
 	}
 
 	public function delete($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "classes.delClass" )){
+			exit;
+		}
 
 		if ( $postDelete = \classes::where('id', $id)->first() )
         {
@@ -83,7 +86,10 @@ class ClassesController extends Controller {
 	}
 
 	public function create(){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "classes.addClass" )){
+			exit;
+		}
 
 		$classes = new \classes();
 		$classes->className = \Input::get('className');
@@ -106,6 +112,11 @@ class ClassesController extends Controller {
 	}
 
 	function fetch($id){
+
+		if(!$this->panelInit->can( "classes.editClass" )){
+			exit;
+		}
+
 		$classDetail = \classes::where('id',$id)->first()->toArray();
 		$classDetail['classTeacher'] = json_decode($classDetail['classTeacher']);
 		$classDetail['classSubjects'] = json_decode($classDetail['classSubjects']);
@@ -113,7 +124,10 @@ class ClassesController extends Controller {
 	}
 
 	function edit($id){
-		if($this->data['users']->role != "admin") exit;
+
+		if(!$this->panelInit->can( "classes.editClass" )){
+			exit;
+		}
 
 		$classes = \classes::find($id);
 		$classes->className = \Input::get('className');

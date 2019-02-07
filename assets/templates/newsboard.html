@@ -11,7 +11,7 @@
     <div class="col-12">
         <div class="card">
             <div class="card-block">
-                <button ng-if="userRole == 'admin'" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addNews}}</button>
+                <button ng-show="$root.can('newsboard.addNews')" ng-click="changeView('add')" class="btn pull-right btn-success card-block-input-item">{{phrase.addNews}}</button>
                 <div class="pull-right card-block-input-group card-block-input-item">
                     <div class="input-group input-group-sm">
                         <input type="text" tooltip title="{{phrase.minCharLength3}}" name="table_search" ng-model="searchText" ng-change="searchDB()" placeholder="{{phrase.Search}}" class="form-control">
@@ -27,20 +27,23 @@
                                 <th>{{phrase.newsTitle}}</th>
                                 <th>{{phrase.newsContent}}</th>
                                 <th>{{phrase.for}}</th>
-                                <th>{{phrase.visibleCMS}}</th>
-                                <th style="width:170px;" ng-if="userRole == 'admin'">{{phrase.Operations}}</th>
+                                <th ng-show="$root.can('newsboard.editNews') || $root.can('newsboard.delNews')">{{phrase.visibleCMS}}</th>
+                                <th style="width:170px;" ng-show="$root.can('newsboard.editNews') || $root.can('newsboard.delNews')">{{phrase.Operations}}</th>
                             </tr>
                             <tr dir-paginate="news in newsboard | itemsPerPage:20" total-items="totalItems">
-                                <td><a href="#newsboard/{{news.id}}">{{news.newsTitle}}</a></td>
+                                <td>
+                                    <a ng-show="$root.can('newsboard.View')" href="portal#/newsboard/{{news.id}}">{{news.newsTitle}}</a>
+                                    <span ng-show="!$root.can('newsboard.View')">{{news.newsTitle}}</span>
+                                </td>
                                 <td><div ng-bind-html="news.newsText"></div></td>
                                 <td>{{news.newsFor}}</td>
-                                <td>
+                                <td ng-show="$root.can('newsboard.editNews') || $root.can('newsboard.delNews')">
                                     <i ng-class="{'color_red':news.fe_active != 1,'color_green':news.fe_active == 1}" class="fa fa-lightbulb-o"></i>
                                 </td>
-                                <td ng-if="userRole == 'admin'">
-                                    <button ng-if="userRole == 'admin'" ng-click="fe_status(news.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleCMS}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
-                                    <button ng-if="userRole == 'admin'" ng-click="edit(news.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
-                                    <button ng-if="userRole == 'admin'" ng-click="remove(news,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
+                                <td ng-show="$root.can('newsboard.editNews') || $root.can('newsboard.delNews')">
+                                    <button ng-show="$root.can('newsboard.editNews')" ng-click="fe_status(news.id,$index)" type="button" class="btn btn-warning btn-circle" title="{{phrase.toggleCMS}}" tooltip><i class="fa fa-lightbulb-o"></i></button>
+                                    <button ng-show="$root.can('newsboard.editNews')" ng-click="edit(news.id)" type="button" class="btn btn-info btn-circle" title="{{phrase.Edit}}" tooltip><i class="fa fa-pencil"></i></button>
+                                    <button ng-show="$root.can('newsboard.delNews')" ng-click="remove(news,$index)" type="button" class="btn btn-danger btn-circle" title="{{phrase.Remove}}" tooltip><i class="fa fa-trash-o"></i></button>
                                 </td>
                             </tr>
                             <tr ng-show="!newsboard.length"><td class="noTableData" colspan="5">{{phrase.noNews}}</td></tr>
